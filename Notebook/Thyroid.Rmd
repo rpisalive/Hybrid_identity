@@ -1,0 +1,924 @@
+---
+title: "Thyroid cancer sample processing and integration"
+author: "Shazneil B."
+date: "2024-06-18"
+output: html_document
+---
+
+```{r}
+#Load packages
+library(Seurat)
+library(ggplot2)
+library(dplyr)
+library(patchwork)
+library(RColorBrewer)
+library(cowplot)
+library(pheatmap)
+library(rafalib)
+library(viridis)
+library(scCustomize)
+library(qs)
+library(UCell)
+```
+
+# Load datasets: GSE184362
+```{r}
+# Load datasets: GSE184362
+#Primary tumour
+P1T <- readRDS("/users/sb01426/Thyroid-datasets/GSE184362-rdsfiles/PTC01-T.rds")
+P2T <- readRDS("/users/sb01426/Thyroid-datasets/GSE184362-rdsfiles/PTC02-T.rds")
+P3T <- readRDS("/users/sb01426/Thyroid-datasets/GSE184362-rdsfiles/PTC03-T.rds")
+P5T <- readRDS("/users/sb01426/Thyroid-datasets/GSE184362-rdsfiles/PTC04-T.rds")
+P8T <- readRDS("/users/sb01426/Thyroid-datasets/GSE184362-rdsfiles/PTC05-T.rds")
+P9T <- readRDS("/users/sb01426/Thyroid-datasets/GSE184362-rdsfiles/PTC06-T.rds")
+P10T <- readRDS("/users/sb01426/Thyroid-datasets/GSE184362-rdsfiles/PTC07-T.rds")
+
+#Paratumour
+P1PT <- readRDS("/users/sb01426/Thyroid-datasets/GSE184362-rdsfiles/PTC01-PT.rds")
+P2PT <- readRDS("/users/sb01426/Thyroid-datasets/GSE184362-rdsfiles/PTC02-PT.rds")
+P3PT <- readRDS("/users/sb01426/Thyroid-datasets/GSE184362-rdsfiles/PTC03-PT.rds")
+P5PT <- readRDS("/users/sb01426/Thyroid-datasets/GSE184362-rdsfiles/PTC05-PT.rds")
+P8PT <- readRDS("/users/sb01426/Thyroid-datasets/GSE184362-rdsfiles/PTC08-PT.rds")
+P9PT <- readRDS("/users/sb01426/Thyroid-datasets/GSE184362-rdsfiles/PTC09-PT.rds")
+
+#Lymph nodes
+P2LNL <- readRDS("/users/sb01426/Thyroid-datasets/GSE184362-rdsfiles/PTC02-LNL.rds")
+P3LNL <- readRDS("/users/sb01426/Thyroid-datasets/GSE184362-rdsfiles/PTC03-LNL.rds")
+P3LNR <- readRDS("/users/sb01426/Thyroid-datasets/GSE184362-rdsfiles/PTC03-LNR.rds")
+P5LNR <- readRDS("/users/sb01426/Thyroid-datasets/GSE184362-rdsfiles/PTC05-LNR.rds")
+P6LNR <- readRDS("/users/sb01426/Thyroid-datasets/GSE184362-rdsfiles/PTC06-LNR.rds")
+P7LNR <- readRDS("/users/sb01426/Thyroid-datasets/GSE184362-rdsfiles/PTC07-LNR.rds")
+P10LNR <- readRDS("/users/sb01426/Thyroid-datasets/GSE184362-rdsfiles/PTC10-LNR.rds")
+P11LNR <- readRDS("/users/sb01426/Thyroid-datasets/GSE184362-rdsfiles/PTC11-LNR.rds")
+
+#Metastatic
+P4M <- readRDS("/users/sb01426/Thyroid-datasets/GSE184362-rdsfiles/PTC04-M.rds")
+P11M <- readRDS("/users/sb01426/Thyroid-datasets/GSE184362-rdsfiles/PTC11-M.rds")
+```
+
+
+# Load datasets: GSE184362
+```{r}
+# Load datasets: GSE184362
+NT <- readRDS("/users/sb01426/Thyroid-datasets/GSE191288.H5-RDS/NT.rds")
+T1L <- readRDS("/users/sb01426/Thyroid-datasets/GSE191288.H5-RDS/T1L.rds")
+T1R <- readRDS("/users/sb01426/Thyroid-datasets/GSE191288.H5-RDS/T1R.rds")
+T2L <- readRDS("/users/sb01426/Thyroid-datasets/GSE191288.H5-RDS/T2L.rds")
+T2R <- readRDS("/users/sb01426/Thyroid-datasets/GSE191288.H5-RDS/T2R.rds")
+T3L <- readRDS("/users/sb01426/Thyroid-datasets/GSE191288.H5-RDS/T3L.rds")
+T3R <- readRDS("/users/sb01426/Thyroid-datasets/GSE191288.H5-RDS/T3R.rds")
+```
+
+
+# Load datasets: GSE193581
+```{r}
+# Load datasets: GSE193581
+#PTC
+P3T1 <- readRDS("/users/sb01426/Thyroid-datasets/GSE193581.TXT-RDS/PTC01.rds")
+P3T2 <- readRDS("/users/sb01426/Thyroid-datasets/GSE193581.TXT-RDS/PTC02.rds")
+P3T3 <- readRDS("/users/sb01426/Thyroid-datasets/GSE193581.TXT-RDS/PTC03.rds")
+P3T4 <- readRDS("/users/sb01426/Thyroid-datasets/GSE193581.TXT-RDS/PTC04.rds")
+P3T5 <- readRDS("/users/sb01426/Thyroid-datasets/GSE193581.TXT-RDS/PTC05.rds")
+P3T6 <- readRDS("/users/sb01426/Thyroid-datasets/GSE193581.TXT-RDS/PTC06.rds")
+P3T7 <- readRDS("/users/sb01426/Thyroid-datasets/GSE193581.TXT-RDS/PTC07.rds")
+
+P3N3 <- readRDS("/users/sb01426/Thyroid-datasets/GSE193581.TXT-RDS/PTC.N03.rds")
+P3N7 <- readRDS("/users/sb01426/Thyroid-datasets/GSE193581.TXT-RDS/PTC.N07.rds")
+P3N20 <- readRDS("/users/sb01426/Thyroid-datasets/GSE193581.TXT-RDS/PTC.N20.rds")
+P3N21 <- readRDS("/users/sb01426/Thyroid-datasets/GSE193581.TXT-RDS/PTC.N21.rds")
+
+#ATC
+A3T8 <- readRDS("/users/sb01426/Thyroid-datasets/GSE193581.TXT-RDS/ATC08.rds")
+A3T9 <- readRDS("/users/sb01426/Thyroid-datasets/GSE193581.TXT-RDS/ATC09.rds")
+A3T10 <- readRDS("/users/sb01426/Thyroid-datasets/GSE193581.TXT-RDS/ATC10.rds")
+A3T11 <- readRDS("/users/sb01426/Thyroid-datasets/GSE193581.TXT-RDS/ATC11.rds")
+A3T12 <- readRDS("/users/sb01426/Thyroid-datasets/GSE193581.TXT-RDS/ATC12.rds")
+A3T13 <- readRDS("/users/sb01426/Thyroid-datasets/GSE193581.TXT-RDS/ATC13.rds")
+A3T14 <- readRDS("/users/sb01426/Thyroid-datasets/GSE193581.TXT-RDS/ATC14.rds")
+A3T15 <- readRDS("/users/sb01426/Thyroid-datasets/GSE193581.TXT-RDS/ATC15.rds")
+A3T17 <- readRDS("/users/sb01426/Thyroid-datasets/GSE193581.TXT-RDS/ATC17.rds")
+A3T18 <- readRDS("/users/sb01426/Thyroid-datasets/GSE193581.TXT-RDS/ATC18.rds")
+
+A3N18 <- readRDS("/users/sb01426/Thyroid-datasets/GSE193581.TXT-RDS/ATC.N18.rds")
+```
+
+#Add dataset GEO accession number origin into metadata
+```{r}
+#Add dataset GEO accession number origin into metadata
+
+##GSE184362
+
+P1T <- AddMetaData(P1T, metadata = "Pu-2021", col.name = "Dataset.origin")
+P2T <- AddMetaData(P2T, metadata = "Pu-2021", col.name = "Dataset.origin")
+P3T <- AddMetaData(P3T, metadata = "Pu-2021", col.name = "Dataset.origin")
+P5T <- AddMetaData(P5T, metadata = "Pu-2021", col.name = "Dataset.origin")
+P8T <- AddMetaData(P8T, metadata = "Pu-2021", col.name = "Dataset.origin")
+P9T <- AddMetaData(P9T, metadata = "Pu-2021", col.name = "Dataset.origin")
+P10T <- AddMetaData(P10T, metadata = "Pu-2021", col.name = "Dataset.origin")
+
+P1PT <- AddMetaData(P1PT, metadata = "Pu-2021", col.name = "Dataset.origin")
+P2PT <- AddMetaData(P2PT, metadata = "Pu-2021", col.name = "Dataset.origin")
+P3PT <- AddMetaData(P3PT, metadata = "Pu-2021", col.name = "Dataset.origin")
+P5PT <- AddMetaData(P5PT, metadata = "Pu-2021", col.name = "Dataset.origin")
+P8PT <- AddMetaData(P8PT, metadata = "Pu-2021", col.name = "Dataset.origin")
+P9PT <- AddMetaData(P9PT, metadata = "Pu-2021", col.name = "Dataset.origin")
+
+P2LNL <- AddMetaData(P2LNL, metadata = "Pu-2021", col.name = "Dataset.origin")
+P3LNL <- AddMetaData(P3LNL, metadata = "Pu-2021", col.name = "Dataset.origin")
+P3LNR <- AddMetaData(P3LNR, metadata = "Pu-2021", col.name = "Dataset.origin")
+P5LNR <- AddMetaData(P5LNR, metadata = "Pu-2021", col.name = "Dataset.origin")
+P6LNR <- AddMetaData(P6LNR, metadata = "Pu-2021", col.name = "Dataset.origin")
+P7LNR <- AddMetaData(P7LNR, metadata = "Pu-2021", col.name = "Dataset.origin")
+P10LNR <- AddMetaData(P10LNR, metadata = "Pu-2021", col.name = "Dataset.origin")
+P11LNR <- AddMetaData(P11LNR, metadata = "Pu-2021", col.name = "Dataset.origin")
+
+P4M <- AddMetaData(P4M, metadata = "Pu-2021", col.name = "Dataset.origin")
+P11M <- AddMetaData(P11M, metadata = "Pu-2021", col.name = "Dataset.origin")
+
+##GSE191288
+
+NT <- AddMetaData(NT, metadata = "Wang-2022", col.name = "Dataset.origin")
+T1L <- AddMetaData(T1L, metadata = "Wang-2022", col.name = "Dataset.origin")
+T1R <- AddMetaData(T1R, metadata = "Wang-2022", col.name = "Dataset.origin")
+T2L <- AddMetaData(T2L, metadata = "Wang-2022", col.name = "Dataset.origin")
+T2R <- AddMetaData(T2R, metadata = "Wang-2022", col.name = "Dataset.origin")
+T3L <- AddMetaData(T3L, metadata = "Wang-2022", col.name = "Dataset.origin")
+T3R <- AddMetaData(T3R, metadata = "Wang-2022", col.name = "Dataset.origin")
+
+##GSE193581
+
+P3T1 <- AddMetaData(P3T1, metadata = "Lu-2023", col.name = "Dataset.origin")
+P3T2 <- AddMetaData(P3T2, metadata = "Lu-2023", col.name = "Dataset.origin")
+P3T3 <- AddMetaData(P3T3, metadata = "Lu-2023", col.name = "Dataset.origin")
+P3T4 <- AddMetaData(P3T4, metadata = "Lu-2023", col.name = "Dataset.origin")
+P3T5 <- AddMetaData(P3T5, metadata = "Lu-2023", col.name = "Dataset.origin")
+P3T6 <- AddMetaData(P3T6, metadata = "Lu-2023", col.name = "Dataset.origin")
+P3T7 <- AddMetaData(P3T7, metadata = "Lu-2023", col.name = "Dataset.origin")
+
+P3N3 <- AddMetaData(P3N3, metadata = "Lu-2023", col.name = "Dataset.origin")
+P3N7 <- AddMetaData(P3N7, metadata = "Lu-2023", col.name = "Dataset.origin")
+P3N20 <- AddMetaData(P3N20, metadata = "Lu-2023", col.name = "Dataset.origin")
+P3N21 <- AddMetaData(P3N21, metadata = "Lu-2023", col.name = "Dataset.origin")
+
+A3T8 <- AddMetaData(A3T8, metadata = "Lu-2023", col.name = "Dataset.origin")
+A3T9 <- AddMetaData(A3T9, metadata = "Lu-2023", col.name = "Dataset.origin")
+A3T10 <- AddMetaData(A3T10, metadata = "Lu-2023", col.name = "Dataset.origin")
+A3T11 <- AddMetaData(A3T11, metadata = "Lu-2023", col.name = "Dataset.origin")
+A3T12 <- AddMetaData(A3T12, metadata = "Lu-2023", col.name = "Dataset.origin")
+A3T13 <- AddMetaData(A3T13, metadata = "Lu-2023", col.name = "Dataset.origin")
+A3T14 <- AddMetaData(A3T14, metadata = "Lu-2023", col.name = "Dataset.origin")
+A3T15 <- AddMetaData(A3T15, metadata = "Lu-2023", col.name = "Dataset.origin")
+A3T17 <- AddMetaData(A3T17, metadata = "Lu-2023", col.name = "Dataset.origin")
+A3T18 <- AddMetaData(A3T18, metadata = "Lu-2023", col.name = "Dataset.origin")
+
+A3N18 <- AddMetaData(A3N18, metadata = "Lu-2023", col.name = "Dataset.origin")
+```
+
+#Add tissue sample origin into metadata
+```{r}
+#Add tissue sample origin into metadata
+
+##GSE184362
+
+P1T <- AddMetaData(P1T, metadata = "Tumour", col.name = "Sample.origin")
+P2T <- AddMetaData(P2T, metadata = "Tumour", col.name = "Sample.origin")
+P3T <- AddMetaData(P3T, metadata = "Tumour", col.name = "Sample.origin")
+P5T <- AddMetaData(P5T, metadata = "Tumour", col.name = "Sample.origin")
+P8T <- AddMetaData(P8T, metadata = "Tumour", col.name = "Sample.origin")
+P9T <- AddMetaData(P9T, metadata = "Tumour", col.name = "Sample.origin")
+P10T <- AddMetaData(P10T, metadata = "Tumour", col.name = "Sample.origin")
+
+P1PT <- AddMetaData(P1PT, metadata = "Paratumour", col.name = "Sample.origin")
+P2PT <- AddMetaData(P2PT, metadata = "Paratumour", col.name = "Sample.origin")
+P3PT <- AddMetaData(P3PT, metadata = "Paratumour", col.name = "Sample.origin")
+P5PT <- AddMetaData(P5PT, metadata = "Paratumour", col.name = "Sample.origin")
+P8PT <- AddMetaData(P8PT, metadata = "Paratumour", col.name = "Sample.origin")
+P9PT <- AddMetaData(P9PT, metadata = "Paratumour", col.name = "Sample.origin")
+
+P2LNL <- AddMetaData(P2LNL, metadata = "Lymph node", col.name = "Sample.origin")
+P3LNL <- AddMetaData(P3LNL, metadata = "Lymph node", col.name = "Sample.origin")
+P3LNR <- AddMetaData(P3LNR, metadata = "Lymph node", col.name = "Sample.origin")
+P5LNR <- AddMetaData(P5LNR, metadata = "Lymph node", col.name = "Sample.origin")
+P6LNR <- AddMetaData(P6LNR, metadata = "Lymph node", col.name = "Sample.origin")
+P7LNR <- AddMetaData(P7LNR, metadata = "Lymph node", col.name = "Sample.origin")
+P10LNR <- AddMetaData(P10LNR, metadata = "Lymph node", col.name = "Sample.origin")
+P11LNR <- AddMetaData(P11LNR, metadata = "Lymph node", col.name = "Sample.origin")
+
+P4M <- AddMetaData(P4M, metadata = "Subcutaneous", col.name = "Sample.origin")
+P11M <- AddMetaData(P11M, metadata = "Subcutaneous", col.name = "Sample.origin")
+
+##GSE191288
+
+NT <- AddMetaData(NT, metadata = "Adjacent", col.name = "Sample.origin")
+T1L <- AddMetaData(T1L, metadata = "Tumour", col.name = "Sample.origin")
+T1R <- AddMetaData(T1R, metadata = "Tumour", col.name = "Sample.origin")
+T2L <- AddMetaData(T2L, metadata = "Tumour", col.name = "Sample.origin")
+T2R <- AddMetaData(T2R, metadata = "Tumour", col.name = "Sample.origin")
+T3L <- AddMetaData(T3L, metadata = "Tumour", col.name = "Sample.origin")
+T3R <- AddMetaData(T3R, metadata = "Tumour", col.name = "Sample.origin")
+
+##GSE193581
+
+P3T1 <- AddMetaData(P3T1, metadata = "Tumour", col.name = "Sample.origin")
+P3T2 <- AddMetaData(P3T2, metadata = "Tumour", col.name = "Sample.origin")
+P3T3 <- AddMetaData(P3T3, metadata = "Tumour", col.name = "Sample.origin")
+P3T4 <- AddMetaData(P3T4, metadata = "Tumour", col.name = "Sample.origin")
+P3T5 <- AddMetaData(P3T5, metadata = "Tumour", col.name = "Sample.origin")
+P3T6 <- AddMetaData(P3T6, metadata = "Tumour", col.name = "Sample.origin")
+P3T7 <- AddMetaData(P3T7, metadata = "Tumour", col.name = "Sample.origin")
+
+P3N3 <- AddMetaData(P3N3, metadata = "Adjacent", col.name = "Sample.origin")
+P3N7 <- AddMetaData(P3N7, metadata = "Adjacent", col.name = "Sample.origin")
+P3N20 <- AddMetaData(P3N20, metadata = "Adjacent", col.name = "Sample.origin")
+P3N21 <- AddMetaData(P3N21, metadata = "Adjacent", col.name = "Sample.origin")
+
+A3T8 <- AddMetaData(A3T8, metadata = "Tumour", col.name = "Sample.origin")
+A3T9 <- AddMetaData(A3T9, metadata = "Tumour", col.name = "Sample.origin")
+A3T10 <- AddMetaData(A3T10, metadata = "Tumour", col.name = "Sample.origin")
+A3T11 <- AddMetaData(A3T11, metadata = "Tumour", col.name = "Sample.origin")
+A3T12 <- AddMetaData(A3T12, metadata = "Tumour", col.name = "Sample.origin")
+A3T13 <- AddMetaData(A3T13, metadata = "Tumour", col.name = "Sample.origin")
+A3T14 <- AddMetaData(A3T14, metadata = "Tumour", col.name = "Sample.origin")
+A3T15 <- AddMetaData(A3T15, metadata = "Tumour", col.name = "Sample.origin")
+A3T17 <- AddMetaData(A3T17, metadata = "Tumour", col.name = "Sample.origin")
+A3T18 <- AddMetaData(A3T18, metadata = "Tumour", col.name = "Sample.origin")
+
+A3N18 <- AddMetaData(A3N18, metadata = "Adjacent", col.name = "Sample.origin")
+```
+
+#Add cancer tissue type into metadata
+```{r}
+#Add tissue sample origin into metadata
+
+##GSE184362
+
+P1T <- AddMetaData(P1T, metadata = "PTC-Tumour", col.name = "Cancer.sample")
+P2T <- AddMetaData(P2T, metadata = "PTC-Tumour", col.name = "Cancer.sample")
+P3T <- AddMetaData(P3T, metadata = "PTC-Tumour", col.name = "Cancer.sample")
+P5T <- AddMetaData(P5T, metadata = "PTC-Tumour", col.name = "Cancer.sample")
+P8T <- AddMetaData(P8T, metadata = "PTC-Tumour", col.name = "Cancer.sample")
+P9T <- AddMetaData(P9T, metadata = "PTC-Tumour", col.name = "Cancer.sample")
+P10T <- AddMetaData(P10T, metadata = "PTC-Tumour", col.name = "Cancer.sample")
+
+P1PT <- AddMetaData(P1PT, metadata = "PTC-Paratumour", col.name = "Cancer.sample")
+P2PT <- AddMetaData(P2PT, metadata = "PTC-Paratumour", col.name = "Cancer.sample")
+P3PT <- AddMetaData(P3PT, metadata = "PTC-Paratumour", col.name = "Cancer.sample")
+P5PT <- AddMetaData(P5PT, metadata = "PTC-Paratumour", col.name = "Cancer.sample")
+P8PT <- AddMetaData(P8PT, metadata = "PTC-Paratumour", col.name = "Cancer.sample")
+P9PT <- AddMetaData(P9PT, metadata = "PTC-Paratumour", col.name = "Cancer.sample")
+
+P2LNL <- AddMetaData(P2LNL, metadata = "PTC-Lymph node", col.name = "Cancer.sample")
+P3LNL <- AddMetaData(P3LNL, metadata = "PTC-Lymph node", col.name = "Cancer.sample")
+P3LNR <- AddMetaData(P3LNR, metadata = "PTC-Lymph node", col.name = "Cancer.sample")
+P5LNR <- AddMetaData(P5LNR, metadata = "PTC-Lymph node", col.name = "Cancer.sample")
+P6LNR <- AddMetaData(P6LNR, metadata = "PTC-Lymph node", col.name = "Cancer.sample")
+P7LNR <- AddMetaData(P7LNR, metadata = "PTC-Lymph node", col.name = "Cancer.sample")
+P10LNR <- AddMetaData(P10LNR, metadata = "PTC-Lymph node", col.name = "Cancer.sample")
+P11LNR <- AddMetaData(P11LNR, metadata = "PTC-Lymph node", col.name = "Cancer.sample")
+
+P4M <- AddMetaData(P4M, metadata = "PTC-Subcutaneous", col.name = "Cancer.sample")
+P11M <- AddMetaData(P11M, metadata = "PTC-Subcutaneous", col.name = "Cancer.sample")
+
+##GSE191288
+
+NT <- AddMetaData(NT, metadata = "PTC-Adjacent", col.name = "Cancer.sample")
+T1L <- AddMetaData(T1L, metadata = "PTC-Tumour", col.name = "Cancer.sample")
+T1R <- AddMetaData(T1R, metadata = "PTC-Tumour", col.name = "Cancer.sample")
+T2L <- AddMetaData(T2L, metadata = "PTC-Tumour", col.name = "Cancer.sample")
+T2R <- AddMetaData(T2R, metadata = "PTC-Tumour", col.name = "Cancer.sample")
+T3L <- AddMetaData(T3L, metadata = "PTC-Tumour", col.name = "Cancer.sample")
+T3R <- AddMetaData(T3R, metadata = "PTC-Tumour", col.name = "Cancer.sample")
+
+##GSE193581
+
+P3T1 <- AddMetaData(P3T1, metadata = "PTC-Tumour", col.name = "Cancer.sample")
+P3T2 <- AddMetaData(P3T2, metadata = "PTC-Tumour", col.name = "Cancer.sample")
+P3T3 <- AddMetaData(P3T3, metadata = "PTC-Tumour", col.name = "Cancer.sample")
+P3T4 <- AddMetaData(P3T4, metadata = "PTC-Tumour", col.name = "Cancer.sample")
+P3T5 <- AddMetaData(P3T5, metadata = "Tumour", col.name = "Cancer.sample")
+P3T6 <- AddMetaData(P3T6, metadata = "PTC-Tumour", col.name = "Cancer.sample")
+P3T7 <- AddMetaData(P3T7, metadata = "PTC-Tumour", col.name = "Cancer.sample")
+
+P3N3 <- AddMetaData(P3N3, metadata = "PTC-Adjacent", col.name = "Cancer.sample")
+P3N7 <- AddMetaData(P3N7, metadata = "PTC-Adjacent", col.name = "Cancer.sample")
+P3N20 <- AddMetaData(P3N20, metadata = "PTC-Adjacent", col.name = "Cancer.sample")
+P3N21 <- AddMetaData(P3N21, metadata = "PTC-Adjacent", col.name = "Cancer.sample")
+
+A3T8 <- AddMetaData(A3T8, metadata = "ATC-Tumour", col.name = "Cancer.sample")
+A3T9 <- AddMetaData(A3T9, metadata = "ATC-Tumour", col.name = "Cancer.sample")
+A3T10 <- AddMetaData(A3T10, metadata = "ATC-Tumour", col.name = "Cancer.sample")
+A3T11 <- AddMetaData(A3T11, metadata = "ATC-Tumour", col.name = "Cancer.sample")
+A3T12 <- AddMetaData(A3T12, metadata = "ATC-Tumour", col.name = "Cancer.sample")
+A3T13 <- AddMetaData(A3T13, metadata = "ATC-Tumour", col.name = "Cancer.sample")
+A3T14 <- AddMetaData(A3T14, metadata = "ATC-Tumour", col.name = "Cancer.sample")
+A3T15 <- AddMetaData(A3T15, metadata = "ATC-Tumour", col.name = "Cancer.sample")
+A3T17 <- AddMetaData(A3T17, metadata = "ATC-Tumour", col.name = "Cancer.sample")
+A3T18 <- AddMetaData(A3T18, metadata = "ATC-Tumour", col.name = "Cancer.sample")
+
+A3N18 <- AddMetaData(A3N18, metadata = "ATC-Adjacent", col.name = "Cancer.sample")
+```
+
+#Add cancer tissue type into metadata
+```{r}
+#Add tissue sample origin into metadata
+
+##GSE184362
+
+P1T <- AddMetaData(P1T, metadata = "PTC", col.name = "Cancer.type")
+P2T <- AddMetaData(P2T, metadata = "PTC", col.name = "Cancer.type")
+P3T <- AddMetaData(P3T, metadata = "PTC", col.name = "Cancer.type")
+P5T <- AddMetaData(P5T, metadata = "PTC", col.name = "Cancer.type")
+P8T <- AddMetaData(P8T, metadata = "PTC", col.name = "Cancer.type")
+P9T <- AddMetaData(P9T, metadata = "PTC", col.name = "Cancer.type")
+P10T <- AddMetaData(P10T, metadata = "PTC", col.name = "Cancer.type")
+
+P1PT <- AddMetaData(P1PT, metadata = "PTC", col.name = "Cancer.type")
+P2PT <- AddMetaData(P2PT, metadata = "PTC", col.name = "Cancer.type")
+P3PT <- AddMetaData(P3PT, metadata = "PTC", col.name = "Cancer.type")
+P5PT <- AddMetaData(P5PT, metadata = "PTC", col.name = "Cancer.type")
+P8PT <- AddMetaData(P8PT, metadata = "PTC", col.name = "Cancer.type")
+P9PT <- AddMetaData(P9PT, metadata = "PTC", col.name = "Cancer.type")
+
+P2LNL <- AddMetaData(P2LNL, metadata = "PTC", col.name = "Cancer.type")
+P3LNL <- AddMetaData(P3LNL, metadata = "PTC", col.name = "Cancer.type")
+P3LNR <- AddMetaData(P3LNR, metadata = "PTC", col.name = "Cancer.type")
+P5LNR <- AddMetaData(P5LNR, metadata = "PTC", col.name = "Cancer.type")
+P6LNR <- AddMetaData(P6LNR, metadata = "PTC", col.name = "Cancer.type")
+P7LNR <- AddMetaData(P7LNR, metadata = "PTC", col.name = "Cancer.type")
+P10LNR <- AddMetaData(P10LNR, metadata = "PTC", col.name = "Cancer.type")
+P11LNR <- AddMetaData(P11LNR, metadata = "PTC", col.name = "Cancer.type")
+
+P4M <- AddMetaData(P4M, metadata = "PTC", col.name = "Cancer.type")
+P11M <- AddMetaData(P11M, metadata = "PTC", col.name = "Cancer.type")
+
+##GSE191288
+
+NT <- AddMetaData(NT, metadata = "PTC", col.name = "Cancer.type")
+T1L <- AddMetaData(T1L, metadata = "PTC", col.name = "Cancer.type")
+T1R <- AddMetaData(T1R, metadata = "PTC", col.name = "Cancer.type")
+T2L <- AddMetaData(T2L, metadata = "PTC", col.name = "Cancer.type")
+T2R <- AddMetaData(T2R, metadata = "PTC", col.name = "Cancer.type")
+T3L <- AddMetaData(T3L, metadata = "PTC", col.name = "Cancer.type")
+T3R <- AddMetaData(T3R, metadata = "PTC", col.name = "Cancer.type")
+
+
+##GSE193581
+
+P3T1 <- AddMetaData(P3T1, metadata = "PTC", col.name = "Cancer.type")
+P3T2 <- AddMetaData(P3T2, metadata = "PTC", col.name = "Cancer.type")
+P3T3 <- AddMetaData(P3T3, metadata = "PTC", col.name = "Cancer.type")
+P3T4 <- AddMetaData(P3T4, metadata = "PTC", col.name = "Cancer.type")
+P3T5 <- AddMetaData(P3T5, metadata = "PTC", col.name = "Cancer.type")
+P3T6 <- AddMetaData(P3T6, metadata = "PTC", col.name = "Cancer.type")
+P3T7 <- AddMetaData(P3T7, metadata = "PTC", col.name = "Cancer.type")
+
+P3N3 <- AddMetaData(P3N3, metadata = "PTC", col.name = "Cancer.type")
+P3N7 <- AddMetaData(P3N7, metadata = "PTC", col.name = "Cancer.type")
+P3N20 <- AddMetaData(P3N20, metadata = "PTC", col.name = "Cancer.type")
+P3N21 <- AddMetaData(P3N21, metadata = "PTC", col.name = "Cancer.type")
+
+A3T8 <- AddMetaData(A3T8, metadata = "ATC", col.name = "Cancer.type")
+A3T9 <- AddMetaData(A3T9, metadata = "ATC", col.name = "Cancer.type")
+A3T10 <- AddMetaData(A3T10, metadata = "ATC", col.name = "Cancer.type")
+A3T11 <- AddMetaData(A3T11, metadata = "ATC", col.name = "Cancer.type")
+A3T12 <- AddMetaData(A3T12, metadata = "ATC", col.name = "Cancer.type")
+A3T13 <- AddMetaData(A3T13, metadata = "ATC", col.name = "Cancer.type")
+A3T14 <- AddMetaData(A3T14, metadata = "ATC", col.name = "Cancer.type")
+A3T15 <- AddMetaData(A3T15, metadata = "ATC", col.name = "Cancer.type")
+A3T17 <- AddMetaData(A3T17, metadata = "ATC", col.name = "Cancer.type")
+A3T18 <- AddMetaData(A3T18, metadata = "ATC", col.name = "Cancer.type")
+
+A3N18 <- AddMetaData(A3N18, metadata = "ATC", col.name = "Cancer.type")
+```
+
+#Add patient sample ID into metadata
+```{r}
+#Add patient number into metadata
+
+##GSE184362
+
+NT <- AddMetaData(NT, metadata = "PTC1.T-01", col.name = "Sample.ID")
+P2T <- AddMetaData(T1L, metadata = "PTC1.T-02", col.name = "Sample.ID")
+P3T <- AddMetaData(P3T, metadata = "PTC1.T-03", col.name = "Sample.ID")
+P5T <- AddMetaData(P5T, metadata = "PTC1.T-05", col.name = "Sample.ID")
+P8T <- AddMetaData(P8T, metadata = "PTC1.T-08", col.name = "Sample.ID")
+P9T <- AddMetaData(P9T, metadata = "PTC1.T-09", col.name = "Sample.ID")
+P10T <- AddMetaData(P10T, metadata = "PTC1.T-10", col.name = "Sample.ID")
+
+P1PT <- AddMetaData(P1PT, metadata = "PTC1.PT-01", col.name = "Sample.ID")
+P2PT <- AddMetaData(P2PT, metadata = "PTC1.PT-02", col.name = "Sample.ID")
+P3PT <- AddMetaData(P3PT, metadata = "PTC1.PT-03", col.name = "Sample.ID")
+P5PT <- AddMetaData(P5PT, metadata = "PTC1.PT-05", col.name = "Sample.ID")
+P8PT <- AddMetaData(P8PT, metadata = "PTC1.PT-08", col.name = "Sample.ID")
+P9PT <- AddMetaData(P9PT, metadata = "PTC1.PT-09", col.name = "Sample.ID")
+
+P2LNL <- AddMetaData(P2LNL, metadata = "PTC1.LN.L-02", col.name = "Sample.ID")
+P3LNL <- AddMetaData(P3LNL, metadata = "PTC1.LN.L-03", col.name = "Sample.ID")
+P3LNR <- AddMetaData(P3LNR, metadata = "PTC1.LN.R-03", col.name = "Sample.ID")
+P5LNR <- AddMetaData(P5LNR, metadata = "PTC1.LN.R-05", col.name = "Sample.ID")
+P6LNR <- AddMetaData(P6LNR, metadata = "PTC1.LN.R-06", col.name = "Sample.ID")
+P7LNR <- AddMetaData(P7LNR, metadata = "PTC1.LN.R-07", col.name = "Sample.ID")
+P10LNR <- AddMetaData(P10LNR, metadata = "PTC1.LN.R-10", col.name = "Sample.ID")
+P11LNR <- AddMetaData(P11LNR, metadata = "PTC1.LN.R-11", col.name = "Sample.ID")
+
+P4M <- AddMetaData(P4M, metadata = "PTC1.M-04", col.name = "Sample.ID")
+P11M <- AddMetaData(P11M, metadata = "PTC1.M-11", col.name = "Sample.ID")
+
+##GSE191288
+
+NT <- AddMetaData(NT, metadata = "PTC2.NT-01", col.name = "Sample.ID")
+T1L <- AddMetaData(T1L, metadata = "PTC2.T.L-12", col.name = "Sample.ID")
+T1R <- AddMetaData(T1R, metadata = "PTC2.T.R-12", col.name = "Sample.ID")
+T2L <- AddMetaData(T2L, metadata = "PTC2.T.L-13", col.name = "Sample.ID")
+T2R <- AddMetaData(T2R, metadata = "PTC2.T.R-13", col.name = "Sample.ID")
+T3L <- AddMetaData(T3L, metadata = "PTC2.T.L-14", col.name = "Sample.ID")
+T3R <- AddMetaData(T3R, metadata = "PTC2.T.R-14", col.name = "Sample.ID")
+
+##GSE193581
+
+P3T1 <- AddMetaData(P3T1, metadata = "PTC3.T-01", col.name = "Sample.ID")
+P3T2 <- AddMetaData(P3T2, metadata = "PTC3.T-02", col.name = "Sample.ID")
+P3T3 <- AddMetaData(P3T3, metadata = "PTC3.T-03", col.name = "Sample.ID")
+P3T4 <- AddMetaData(P3T4, metadata = "PTC3.T-04", col.name = "Sample.ID")
+P3T5 <- AddMetaData(P3T5, metadata = "PTC3.T-05", col.name = "Sample.ID")
+P3T6 <- AddMetaData(P3T6, metadata = "PTC3.T-06", col.name = "Sample.ID")
+P3T7 <- AddMetaData(P3T7, metadata = "PTC3.T-07", col.name = "Sample.ID")
+
+P3N3 <- AddMetaData(P3N3, metadata = "PTC3.NT-03", col.name = "Sample.ID")
+P3N7 <- AddMetaData(P3N7, metadata = "PTC3.NT-07", col.name = "Sample.ID")
+P3N20 <- AddMetaData(P3N20, metadata = "PT3.NT-20", col.name = "Sample.ID")
+P3N21 <- AddMetaData(P3N21, metadata = "PTC3.NT-21", col.name = "Sample.ID")
+
+A3T8 <- AddMetaData(A3T8, metadata = "ATC3.T-08", col.name = "Cancer.type")
+A3T9 <- AddMetaData(A3T9, metadata = "ATC3.T-09", col.name = "Cancer.type")
+A3T10 <- AddMetaData(A3T10, metadata = "ATC3.T-10", col.name = "Cancer.type")
+A3T11 <- AddMetaData(A3T11, metadata = "ATC3.T-11", col.name = "Cancer.type")
+A3T12 <- AddMetaData(A3T12, metadata = "ATC3.T-12", col.name = "Cancer.type")
+A3T13 <- AddMetaData(A3T13, metadata = "ATC3.T-13", col.name = "Cancer.type")
+A3T14 <- AddMetaData(A3T14, metadata = "ATC3.T-14", col.name = "Cancer.type")
+A3T15 <- AddMetaData(A3T15, metadata = "ATC3.T-15", col.name = "Cancer.type")
+A3T17 <- AddMetaData(A3T17, metadata = "ATC3.T-17", col.name = "Cancer.type")
+A3T18 <- AddMetaData(A3T18, metadata = "ATC3.T-18", col.name = "Cancer.type")
+
+A3N18 <- AddMetaData(A3N18, metadata = "ATC3.NT-18", col.name = "Cancer.type")
+```
+
+#QC filtering
+
+#Calculate mitochondrial genes and unique genes
+```{r}
+#Calculate mitochondrial genes and unique genes
+
+##GSE184362
+
+P1T[["percent.mt"]] <- PercentageFeatureSet(P1T, pattern = "^MT-")
+P2T[["percent.mt"]] <- PercentageFeatureSet(P2T, pattern = "^MT-")
+P3T[["percent.mt"]] <- PercentageFeatureSet(P3T, pattern = "^MT-")
+P5T[["percent.mt"]] <- PercentageFeatureSet(P5T, pattern = "^MT-")
+P8T[["percent.mt"]] <- PercentageFeatureSet(P8T, pattern = "^MT-")
+P9T[["percent.mt"]] <- PercentageFeatureSet(P9T, pattern = "^MT-")
+P10T[["percent.mt"]] <- PercentageFeatureSet(P10T, pattern = "^MT-")
+
+P1PT[["percent.mt"]] <- PercentageFeatureSet(P1PT, pattern = "^MT-")
+P2PT[["percent.mt"]] <- PercentageFeatureSet(P2PT, pattern = "^MT-")
+P3PT[["percent.mt"]] <- PercentageFeatureSet(P3PT, pattern = "^MT-")
+P5PT[["percent.mt"]] <- PercentageFeatureSet(P5PT, pattern = "^MT-")
+P8PT[["percent.mt"]] <- PercentageFeatureSet(P8PT, pattern = "^MT-")
+P9PT[["percent.mt"]] <- PercentageFeatureSet(P9PT, pattern = "^MT-")
+
+P2LNL[["percent.mt"]] <- PercentageFeatureSet(P2LNL, pattern = "^MT-")
+P3LNL[["percent.mt"]] <- PercentageFeatureSet(P3LNL, pattern = "^MT-")
+P3LNR[["percent.mt"]] <- PercentageFeatureSet(P3LNR, pattern = "^MT-")
+P5LNR[["percent.mt"]] <- PercentageFeatureSet(P5LNR, pattern = "^MT-")
+P6LNR[["percent.mt"]] <- PercentageFeatureSet(P6LNR, pattern = "^MT-")
+P7LNR[["percent.mt"]] <- PercentageFeatureSet(P7LNR, pattern = "^MT-")
+P10LNR[["percent.mt"]] <- PercentageFeatureSet(P10LNR, pattern = "^MT-")
+P11LNR[["percent.mt"]] <- PercentageFeatureSet(P11LNR, pattern = "^MT-")
+
+P4M[["percent.mt"]] <- PercentageFeatureSet(P4M, pattern = "^MT-")
+P11M[["percent.mt"]] <- PercentageFeatureSet(P11M, pattern = "^MT-")
+
+## GSE191288
+
+NT[["percent.mt"]] <- PercentageFeatureSet(NT, pattern = "^MT-")
+
+T1L[["percent.mt"]] <- PercentageFeatureSet(T1L, pattern = "^MT-")
+T1R[["percent.mt"]] <- PercentageFeatureSet(T1R, pattern = "^MT-")
+T2L[["percent.mt"]] <- PercentageFeatureSet(T2L, pattern = "^MT-")
+T2R[["percent.mt"]] <- PercentageFeatureSet(T2R, pattern = "^MT-")
+T3L[["percent.mt"]] <- PercentageFeatureSet(T3L, pattern = "^MT-")
+T3R[["percent.mt"]] <- PercentageFeatureSet(T3R, pattern = "^MT-")
+
+##GSE193581
+
+P3T1[["percent.mt"]] <- PercentageFeatureSet(P3T1, pattern = "^MT-")
+P3T2[["percent.mt"]] <- PercentageFeatureSet(P3T2, pattern = "^MT-")
+P3T3[["percent.mt"]] <- PercentageFeatureSet(P3T3, pattern = "^MT-")
+P3T4[["percent.mt"]] <- PercentageFeatureSet(P3T4, pattern = "^MT-")
+P3T5[["percent.mt"]] <- PercentageFeatureSet(P3T5, pattern = "^MT-")
+P3T6[["percent.mt"]] <- PercentageFeatureSet(P3T6, pattern = "^MT-")
+P3T7[["percent.mt"]] <- PercentageFeatureSet(P3T7, pattern = "^MT-")
+
+P3N3[["percent.mt"]] <- PercentageFeatureSet(P3N3, pattern = "^MT-")
+P3N7[["percent.mt"]] <- PercentageFeatureSet(P3N7, pattern = "^MT-")
+P3N20[["percent.mt"]] <- PercentageFeatureSet(P3N20, pattern = "^MT-")
+P3N21[["percent.mt"]] <- PercentageFeatureSet(P3N21, pattern = "^MT-")
+
+A3T8[["percent.mt"]] <- PercentageFeatureSet(A3T8, pattern = "^MT-")
+A3T9[["percent.mt"]] <- PercentageFeatureSet(A3T9, pattern = "^MT-")
+A3T10[["percent.mt"]] <- PercentageFeatureSet(A3T10, pattern = "^MT-")
+A3T11[["percent.mt"]] <- PercentageFeatureSet(A3T11, pattern = "^MT-")
+A3T12[["percent.mt"]] <- PercentageFeatureSet(A3T12, pattern = "^MT-")
+A3T13[["percent.mt"]] <- PercentageFeatureSet(A3T13, pattern = "^MT-")
+A3T14[["percent.mt"]] <- PercentageFeatureSet(A3T14, pattern = "^MT-")
+A3T15[["percent.mt"]] <- PercentageFeatureSet(A3T15, pattern = "^MT-")
+A3T17[["percent.mt"]] <- PercentageFeatureSet(A3T17, pattern = "^MT-")
+A3T18[["percent.mt"]] <- PercentageFeatureSet(A3T18, pattern = "^MT-")
+
+A3N18[["percent.mt"]] <- PercentageFeatureSet(A3N18, pattern = "^MT-")
+```
+
+#Violin plots before/after QC
+
+```{r}
+#Violin plots before/after QC
+
+##GSE184362
+
+VlnPlot(P1T, features = c("nFeature_RNA","nCount_RNA","percent.mt"), ncol = 4)
+VlnPlot(P2T, features = c("nFeature_RNA","nCount_RNA","percent.mt"), ncol = 4)
+VlnPlot(P3T, features = c("nFeature_RNA","nCount_RNA","percent.mt"), ncol = 4)
+VlnPlot(P5T, features = c("nFeature_RNA","nCount_RNA","percent.mt"), ncol = 4)
+VlnPlot(P8T, features = c("nFeature_RNA","nCount_RNA","percent.mt"), ncol = 4)
+VlnPlot(P9T, features = c("nFeature_RNA","nCount_RNA","percent.mt"), ncol = 4)
+VlnPlot(P10T, features = c("nFeature_RNA","nCount_RNA","percent.mt"), ncol = 4)
+
+VlnPlot(P1PT, features = c("nFeature_RNA","nCount_RNA","percent.mt"), ncol = 4)
+VlnPlot(P2PT, features = c("nFeature_RNA","nCount_RNA","percent.mt"), ncol = 4)
+VlnPlot(P3PT, features = c("nFeature_RNA","nCount_RNA","percent.mt"), ncol = 4)
+VlnPlot(P5PT, features = c("nFeature_RNA","nCount_RNA","percent.mt"), ncol = 4)
+VlnPlot(P8PT, features = c("nFeature_RNA","nCount_RNA","percent.mt"), ncol = 4)
+VlnPlot(P9PT, features = c("nFeature_RNA","nCount_RNA","percent.mt"), ncol = 4)
+
+
+VlnPlot(P2LNL, features = c("nFeature_RNA","nCount_RNA","percent.mt"), ncol = 4)
+VlnPlot(P3LNL, features = c("nFeature_RNA","nCount_RNA","percent.mt"), ncol = 4)
+VlnPlot(P3LNR, features = c("nFeature_RNA","nCount_RNA","percent.mt"), ncol = 4)
+VlnPlot(P5LNR, features = c("nFeature_RNA","nCount_RNA","percent.mt"), ncol = 4)
+VlnPlot(P6LNR, features = c("nFeature_RNA","nCount_RNA","percent.mt"), ncol = 4)
+VlnPlot(P7LNR, features = c("nFeature_RNA","nCount_RNA","percent.mt"), ncol = 4)
+VlnPlot(P10LNR, features = c("nFeature_RNA","nCount_RNA","percent.mt"), ncol = 4)
+VlnPlot(P11LNR, features = c("nFeature_RNA","nCount_RNA","percent.mt"), ncol = 4)
+
+VlnPlot(P4M, features = c("nFeature_RNA","nCount_RNA","percent.mt"), ncol = 4)
+VlnPlot(P11M, features = c("nFeature_RNA","nCount_RNA","percent.mt"), ncol = 4)
+
+##GSE191288
+
+VlnPlot(NT, features = c("nFeature_RNA","nCount_RNA","percent.mt"), ncol = 4)
+
+VlnPlot(T1L, features = c("nFeature_RNA","nCount_RNA","percent.mt"), ncol = 4)
+VlnPlot(T1R, features = c("nFeature_RNA","nCount_RNA","percent.mt"), ncol = 4)
+VlnPlot(T2L, features = c("nFeature_RNA","nCount_RNA","percent.mt"), ncol = 4)
+VlnPlot(T2R, features = c("nFeature_RNA","nCount_RNA","percent.mt"), ncol = 4)
+VlnPlot(T3L, features = c("nFeature_RNA","nCount_RNA","percent.mt"), ncol = 4)
+VlnPlot(T3R, features = c("nFeature_RNA","nCount_RNA","percent.mt"), ncol = 4)
+
+##GSE193581
+
+VlnPlot(P3T1, features = c("nFeature_RNA","nCount_RNA","percent.mt"), ncol = 4)
+VlnPlot(P3T2, features = c("nFeature_RNA","nCount_RNA","percent.mt"), ncol = 4)
+VlnPlot(P3T3, features = c("nFeature_RNA","nCount_RNA","percent.mt"), ncol = 4)
+VlnPlot(P3T4, features = c("nFeature_RNA","nCount_RNA","percent.mt"), ncol = 4)
+VlnPlot(P3T5, features = c("nFeature_RNA","nCount_RNA","percent.mt"), ncol = 4)
+VlnPlot(P3T6, features = c("nFeature_RNA","nCount_RNA","percent.mt"), ncol = 4)
+VlnPlot(P3T7, features = c("nFeature_RNA","nCount_RNA","percent.mt"), ncol = 4)
+
+VlnPlot(P3N3, features = c("nFeature_RNA","nCount_RNA","percent.mt"), ncol = 4)
+VlnPlot(P3N7, features = c("nFeature_RNA","nCount_RNA","percent.mt"), ncol = 4)
+VlnPlot(P3N20, features = c("nFeature_RNA","nCount_RNA","percent.mt"), ncol = 4)
+VlnPlot(P3N21, features = c("nFeature_RNA","nCount_RNA","percent.mt"), ncol = 4)
+
+```
+
+```{r}
+#QC filtering
+
+##GSE184362
+P1T <- subset(P1T, subset = nFeature_RNA > 500 & nFeature_RNA < 5000 & percent.mt < 10)
+P2T <- subset(P2T, subset = nFeature_RNA > 500 & nFeature_RNA < 5000 & percent.mt < 10)
+P3T <- subset(P3T, subset = nFeature_RNA > 500 & nFeature_RNA < 5000 & percent.mt < 10)
+P5T <- subset(P5T, subset = nFeature_RNA > 500 & nFeature_RNA < 5000 & percent.mt < 10)
+P8T <- subset(P8T, subset = nFeature_RNA > 500 & nFeature_RNA < 5000 & percent.mt < 10)
+P9T <- subset(P9T, subset = nFeature_RNA > 500 & nFeature_RNA < 5000 & percent.mt < 10)
+P10T <- subset(P10T, subset = nFeature_RNA > 500 & nFeature_RNA < 5000 & percent.mt < 10)
+
+P1PT <- subset(P1PT, subset = nFeature_RNA > 500 & nFeature_RNA < 5000 & percent.mt < 10)
+P2PT <- subset(P2PT, subset = nFeature_RNA > 500 & nFeature_RNA < 5000 & percent.mt < 10)
+P3PT <- subset(P3PT, subset = nFeature_RNA > 500 & nFeature_RNA < 5000 & percent.mt < 10)
+P5PT <- subset(P5PT, subset = nFeature_RNA > 500 & nFeature_RNA < 5000 & percent.mt < 10)
+P8PT <- subset(P8PT, subset = nFeature_RNA > 500 & nFeature_RNA < 5000 & percent.mt < 10)
+P9PT <- subset(P9PT, subset = nFeature_RNA > 500 & nFeature_RNA < 5000 & percent.mt < 10)
+
+P2LNL <- subset(P2LNL, subset = nFeature_RNA > 500 & nFeature_RNA < 5000 & percent.mt < 10)
+P3LNL <- subset(P3LNL, subset = nFeature_RNA > 500 & nFeature_RNA < 5000 & percent.mt < 10)
+P3LNR <- subset(P3LNR, subset = nFeature_RNA > 500 & nFeature_RNA < 5000 & percent.mt < 10)
+P5LNR <- subset(P5LNR, subset = nFeature_RNA > 500 & nFeature_RNA < 5000 & percent.mt < 10)
+P6LNR <- subset(P6LNR, subset = nFeature_RNA > 500 & nFeature_RNA < 5000 & percent.mt < 10)
+P7LNR <- subset(P7LNR, subset = nFeature_RNA > 500 & nFeature_RNA < 5000 & percent.mt < 10)
+P10LNR <- subset(P10LNR, subset = nFeature_RNA > 500 & nFeature_RNA < 5000 & percent.mt < 10)
+P11LNR <- subset(P11LNR, subset = nFeature_RNA > 500 & nFeature_RNA < 5000 & percent.mt < 10)
+
+P4M <- subset(P4M, subset = nFeature_RNA > 500 & nFeature_RNA < 5000 & percent.mt < 10)
+P11M <- subset(P11M, subset = nFeature_RNA > 500 & nFeature_RNA < 5000 & percent.mt < 10)
+
+##GSE191288
+
+NT <- subset(NT, subset = nFeature_RNA > 500 & nFeature_RNA < 5000 & percent.mt < 10)
+T1L <- subset(T1L, subset = nFeature_RNA > 500 & nFeature_RNA < 5000 & percent.mt < 10)
+T1R <- subset(T1R, subset = nFeature_RNA > 500 & nFeature_RNA < 5000 & percent.mt < 10)
+T2L <- subset(T2L, subset = nFeature_RNA > 500 & nFeature_RNA < 5000 & percent.mt < 10)
+T2R <- subset(T2R, subset = nFeature_RNA > 500 & nFeature_RNA < 5000 & percent.mt < 10)
+T3L <- subset(T3L, subset = nFeature_RNA > 500 & nFeature_RNA < 5000 & percent.mt < 10)
+T3R <- subset(T4R, subset = nFeature_RNA > 500 & nFeature_RNA < 5000 & percent.mt < 10)
+
+##GSE193581
+
+P3T1 <- subset(P3T1, subset = nFeature_RNA > 500 & nFeature_RNA < 5000 & percent.mt < 10)
+P3T2 <- subset(P3T2, subset = nFeature_RNA > 500 & nFeature_RNA < 5000 & percent.mt < 10)
+P3T3 <- subset(P3T3, subset = nFeature_RNA > 500 & nFeature_RNA < 5000 & percent.mt < 10)
+P3T4 <- subset(P3T4, subset = nFeature_RNA > 500 & nFeature_RNA < 5000 & percent.mt < 10)
+P3T5 <- subset(P3T5, subset = nFeature_RNA > 500 & nFeature_RNA < 5000 & percent.mt < 10)
+P3T6 <- subset(P3T6, subset = nFeature_RNA > 500 & nFeature_RNA < 5000 & percent.mt < 10)
+P3T7 <- subset(P3T7, subset = nFeature_RNA > 500 & nFeature_RNA < 5000 & percent.mt < 10)
+
+P3N3 <- subset(P3T1, subset = nFeature_RNA > 500 & nFeature_RNA < 5000 & percent.mt < 10)
+P3N7 <- subset(P3T1, subset = nFeature_RNA > 500 & nFeature_RNA < 5000 & percent.mt < 10)
+P3N20 <- subset(P3T1, subset = nFeature_RNA > 500 & nFeature_RNA < 5000 & percent.mt < 10)
+P3N21 <- subset(P3T1, subset = nFeature_RNA > 500 & nFeature_RNA < 5000 & percent.mt < 10)
+```
+
+#Integration of the datasets using standard pipeline
+##GSE184362
+```{r}
+#Create R list of the objects
+T_list <- list()
+T_list[["PTC_01T"]] <- P1T
+T_list[["PTC_02T"]] <- P2T
+T_list[["PTC_03T"]] <- P3T
+T_list[["PTC_05T"]] <- P5T
+T_list[["PTC_08T"]] <- P8T
+T_list[["PTC_09T"]] <- P9T
+T_list[["PTC_10T"]] <- P10T
+T_list[["PTC_01PT"]] <- P1PT
+T_list[["PTC_02PT"]] <- P2PT
+T_list[["PTC_03PT"]] <- P3PT
+T_list[["PTC_05PT"]] <- P5PT
+T_list[["PTC_08PT"]] <- P8PT
+T_list[["PTC_09PT"]] <- P9PT
+T_list[["PTC_02LNL"]] <- P2LNL
+T_list[["PTC_03LNL"]] <- P3LNL
+T_list[["PTC_03LNR"]] <- P3LNR
+T_list[["PTC_05LNR"]] <- P5LNR
+T_list[["PTC_06LNR"]] <- P6LNR
+T_list[["PTC_07LNR"]] <- P7LNR
+T_list[["PTC_10LNR"]] <- P10LNR
+T_list[["PTC_11LNR"]] <- P11LNR
+T_list[["PTC_04M"]] <- P4M
+T_list[["PTC_11M"]] <- P11M
+
+#Normalise and find HGV for each
+for (i in 1:length(T_list)) {
+  T_list[[i]] <- NormalizeData(T_list[[i]], verbose = F)
+  T_list[[i]] <- FindVariableFeatures(T_list[[i]], selection.method = "vst", nfeatures = 2000, verbose = F)
+}
+
+#Find integration anchors (2h22)
+Thyroid_anchors <- FindIntegrationAnchors(object.list = T_list, dims = 1:30)
+Dataset1 <- IntegrateData(anchorset = Thyroid_anchors, dims = 1:30)
+
+#Remove unneeded data structures
+rm(T_list)
+rm(Thyroid_anchors)
+
+#Save integrated seurat object as RDS file
+saveRDS(Dataset1, file = "/users/sb01426/Thyroid-datasets/Thyroid-dataset1_integrated.rds")
+```
+```{r}
+saveRDS(Dataset1, file = "/users/sb01426/Thyroid-datasets/Thyroid-dataset1_integrated.rds")
+
+```
+
+#Integration of the datasets using standard pipeline
+##GSE191288
+```{r}
+#Create R list of the objects
+T_list2 <- list()
+T_list2[["NT_01"]] <- NT
+T_list2[["PTC_12TL"]] <- T1L
+T_list2[["PTC_12TR"]] <- T1R
+T_list2[["PTC_13TL"]] <- T2L
+T_list2[["PTC_13TR"]] <- T2R
+T_list2[["PTC_14TL"]] <- T3L
+T_list2[["PTC_14TR"]] <- T3R
+
+#Normalise and find HGV for each
+for (i in 1:length(T_list2)) {
+  T_list2[[i]] <- NormalizeData(T_list2[[i]], verbose = F)
+  T_list2[[i]] <- FindVariableFeatures(T_list2[[i]], selection.method = "vst", nfeatures = 2000, verbose = F)
+}
+
+#Find integration anchors (2h22)
+Thyroid_anchors2 <- FindIntegrationAnchors(object.list = T_list2, dims = 1:30)
+Dataset2 <- IntegrateData(anchorset = Thyroid_anchors2, dims = 1:30)
+
+#Remove unneeded data structures
+rm(T_list2)
+rm(Thyroid_anchors2)
+
+#Save integrated seurat object as RDS file
+saveRDS(Dataset2, file = "/users/sb01426/Thyroid-datasets/Thyroid-dataset2_integrated.rds")
+```
+
+#Integration of the datasets using standard pipeline
+##GSE193581 - PTC
+```{r}
+#Create R list of the objects
+T_list3 <- list()
+T_list3[["PTC_15T"]] <- P3T1
+T_list3[["PTC_16T"]] <- P3T2
+T_list3[["PTC_17T"]] <- P3T3
+T_list3[["PTC_18T"]] <- P3T4
+T_list3[["PTC_19T"]] <- P3T5
+T_list3[["PTC_20T"]] <- P3T6
+T_list3[["PTC_21T"]] <- P3T7
+T_list3[["NT_02"]] <- P3N3
+T_list3[["NT_03"]] <- P3N7
+T_list3[["NT_04"]] <- P3N20
+T_list3[["NT_05"]] <- P3N21
+
+#Normalise and find HGV for each
+for (i in 1:length(T_list3)) {
+  T_list3[[i]] <- NormalizeData(T_list3[[i]], verbose = F)
+  T_list3[[i]] <- FindVariableFeatures(T_list3[[i]], selection.method = "vst", nfeatures = 2000, verbose = F)
+}
+
+#Find integration anchors (2h22)
+Thyroid_anchors3 <- FindIntegrationAnchors(object.list = T_list3, dims = 1:30)
+Dataset3 <- IntegrateData(anchorset = Thyroid_anchors3, dims = 1:30)
+
+#Remove unneeded data structures
+rm(T_list3)
+rm(Thyroid_anchors3)
+
+#Save integrated seurat object as RDS file
+saveRDS(Dataset3, file = "/users/sb01426/Thyroid-datasets/Thyroid-dataset3-PTC_integrated.rds")
+```
+
+#Integration of the datasets using standard pipeline
+##GSE193581 - ATC
+```{r}
+#Create R list of the objects
+T_list4 <- list()
+T_list4[["ATC_01T"]] <- A3T8
+T_list4[["ATC_02T"]] <- A3T9
+T_list4[["ATC_03T"]] <- A3T10
+T_list4[["ATC_04T"]] <- A3T11
+T_list4[["ATC_05T"]] <- A3T12
+T_list4[["ATC_06T"]] <- A3T13
+T_list4[["ATC_07T"]] <- A3T14
+T_list4[["ATC_08T"]] <- A3T15
+T_list4[["ATC_09T"]] <- A3T17
+T_list4[["ATC_10T"]] <- A3T18
+T_list4[["NT_06"]] <- A3N18
+
+#Normalise and find HGV for each
+for (i in 1:length(T_list4)) {
+  T_list4[[i]] <- NormalizeData(T_list4[[i]], verbose = F)
+  T_list4[[i]] <- FindVariableFeatures(T_list4[[i]], selection.method = "vst", nfeatures = 2000, verbose = F)
+}
+
+#Find integration anchors (2h22)
+Thyroid_anchors4 <- FindIntegrationAnchors(object.list = T_list4, dims = 1:30)
+Dataset4 <- IntegrateData(anchorset = Thyroid_anchors4, dims = 1:30)
+
+#Remove unneeded data structures
+rm(T_list4)
+rm(Thyroid_anchors4)
+
+#Save integrated seurat object as RDS file
+saveRDS(Dataset4, file = "/users/sb01426/Thyroid-datasets/Thyroid-dataset4-ATC_integrated.rds")
+```
+
+#Integration of the datasets using standard pipeline
+##ALL
+```{r}
+#Create R list of the objects
+T_listA <- list()
+T_listA[["PTC_01T"]] <- P1T
+T_listA[["PTC_02T"]] <- P2T
+T_listA[["PTC_03T"]] <- P3T
+T_listA[["PTC_05T"]] <- P5T
+T_listA[["PTC_08T"]] <- P8T
+T_listA[["PTC_09T"]] <- P9T
+T_listA[["PTC_10T"]] <- P10T
+T_listA[["PTC_01PT"]] <- P1PT
+T_listA[["PTC_02PT"]] <- P2PT
+T_listA[["PTC_03PT"]] <- P3PT
+T_listA[["PTC_05PT"]] <- P5PT
+T_listA[["PTC_08PT"]] <- P8PT
+T_listA[["PTC_09PT"]] <- P9PT
+T_listA[["PTC_02LNL"]] <- P2LNL
+T_listA[["PTC_03LNL"]] <- P3LNL
+T_listA[["PTC_03LNR"]] <- P3LNR
+T_listA[["PTC_05LNR"]] <- P5LNR
+T_listA[["PTC_06LNR"]] <- P6LNR
+T_listA[["PTC_07LNR"]] <- P7LNR
+T_listA[["PTC_10LNR"]] <- P10LNR
+T_listA[["PTC_11LNR"]] <- P11LNR
+T_listA[["PTC_04M"]] <- P4M
+T_listA[["PTC_11M"]] <- P11M
+
+T_listA[["NT_01"]] <- NT
+T_listA[["PTC_12TL"]] <- T1L
+T_listA[["PTC_12TR"]] <- T1R
+T_listA[["PTC_13TL"]] <- T2L
+T_listA[["PTC_13TR"]] <- T2R
+T_listA[["PTC_14TL"]] <- T3L
+T_listA[["PTC_14TR"]] <- T3R
+
+T_listA[["PTC_15T"]] <- P3T1
+T_listA[["PTC_16T"]] <- P3T2
+T_listA[["PTC_17T"]] <- P3T3
+T_listA[["PTC_18T"]] <- P3T4
+T_listA[["PTC_19T"]] <- P3T5
+T_listA[["PTC_20T"]] <- P3T6
+T_listA[["PTC_21T"]] <- P3T7
+T_listA[["NT_02"]] <- P3N3
+T_listA[["NT_03"]] <- P3N7
+T_listA[["NT_04"]] <- P3N20
+T_listA[["NT_05"]] <- P3N21
+
+T_listA[["ATC_01T"]] <- A3T8
+T_listA[["ATC_02T"]] <- A3T9
+T_listA[["ATC_03T"]] <- A3T10
+T_listA[["ATC_04T"]] <- A3T11
+T_listA[["ATC_05T"]] <- A3T12
+T_listA[["ATC_06T"]] <- A3T13
+T_listA[["ATC_07T"]] <- A3T14
+T_listA[["ATC_08T"]] <- A3T15
+T_listA[["ATC_09T"]] <- A3T17
+T_listA[["ATC_10T"]] <- A3T18
+T_listA[["NT_06"]] <- A3N18
+
+#Normalise and find HGV for each
+for (i in 1:length(T_listA)) {
+  T_listA[[i]] <- NormalizeData(T_listA[[i]], verbose = F)
+  T_listA[[i]] <- FindVariableFeatures(T_listA[[i]], selection.method = "vst", nfeatures = 2000, verbose = F)
+}
+
+#Find integration anchors (2h22)
+Thyroid_anchorsA <- FindIntegrationAnchors(object.list = T_listA, dims = 1:30)
+Thyroid <- IntegrateData(anchorset = Thyroid_anchorsA, dims = 1:30)
+
+#Remove unneeded data structures
+rm(T_listA)
+rm(Thyroid_anchorsA)
+
+#Save integrated seurat object as RDS file
+saveRDS(Thyroid, file = "/users/sb01426/Thyroid-datasets/Thyroid-alldatasets_integrated.rds")
+```
+
+```{r}
+#Set the assay to RNA
+DefaultAssay(Thyroid) <- "RNA"
+
+#Normalisation, HGV finding, scaling, PCA and UMAP on the non-integrated data
+Thyroid         <- NormalizeData(Thyroid, verbose = F)
+Thyroid <- FindVariableFeatures(Thyroid, selection.method = "vst", nFeatures = 2000, verbose = F)
+Thyroid <- ScaleData(Thyroid, verbose = F)
+Thyroid <- RunPCA(Thyroid, npcs = 50, verbose = F, seed.use = 42)
+Thyroid <- RunUMAP(Thyroid, reduction = "pca", dims = 1:50, verbose = F, seed.use = 42)
+DimPlot(Thyroid, reduction = "umap")
+
+#Normalisation, HGV finding, scaling, PCA and UMAP on the integrated data
+DefaultAssay(Thyroid) <- "integrated"
+Thyroid <- ScaleData(Thyroid, verbose = F)
+Thyroid <- RunPCA(Thyroid, npcs = 50, verbose = F)
+Thyroid <- RunUMAP(Thyroid, reduction = "pca", dims = 1:50, verbose = F)
+DimPlot(Thyroid, reduction = "umap")
+DimPlot(Thyroid, reduction = "umap", split.by = "orig.ident")
+
+#Cluster the integrated matrix
+Thyroid <- FindNeighbors(Thyroid, dims = 1:50, k.param = 10, verbose = F)
+Thyroid <- FindClusters(Thyroid, verbose = F, resolution = 0.5)
+DimPlot(Thyroid, label = T)
+
+#Save processed integrated seurat object as RDS file
+saveRDS(Thyroid, file = "/users/sb01426/Thyroid-datasets/Thyroid-alldatasetsprocessed_integrated.rds")
+
+```
+
+
+
+
