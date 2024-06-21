@@ -85,6 +85,70 @@ for (folder in folders) {
 #Remove the seurat object & data_matrix
 rm(data_matrix,seurat_object)
 
+# List all objects in the environment
+all_objects <- ls()
+
+# Check which of these objects are of class 'Seurat'
+seurat_objects <- sapply(all_objects, function(x) {
+  obj <- get(x)
+  class(obj) == "Seurat"
+})
+
+# Extract the names of Seurat objects
+seurat_object_names <- names(seurat_objects)[seurat_objects]
+
+# Function to perform quality control on a Seurat object
+filter_seurat_object <- function(seurat_obj) {
+  # Filter cells with less than 500 genes
+  seurat_obj <- subset(seurat_obj, subset = nFeature_RNA >= 500)
+  
+  # Calculate the percentage of mitochondrial reads
+  seurat_obj[["percent.mt"]] <- PercentageFeatureSet(seurat_obj, pattern = "^MT-")
+  
+  # Filter cells with more than 20% mitochondrial reads
+  seurat_obj <- subset(seurat_obj, subset = percent.mt <= 20)
+  
+  # Further filter cells with 0 counts for CD3D, CD3E, or CD3G genes, for Seurat V4
+  #seurat_obj <- subset(seurat_obj, subset = CD3D > 0 & CD3E > 0 & CD3G > 0)
+
+  # Further filter cells with 0 counts for CD3D, CD3E, or CD3G genes, for Seurat V5
+  # Fetch data for CD3D, CD3E, and CD3G
+  gene_data <- FetchData(seurat_obj, vars = c("CD3D", "CD3E", "CD3G"))
+  # Identify cells that meet the filtering criteria
+  cells_to_keep <- rownames(gene_data)[gene_data$CD3D > 0 & gene_data$CD3E > 0 & gene_data$CD3G > 0]
+  # Subset the Seurat object to keep only the selected cells
+  seurat_obj <- subset(seurat_obj, cells = cells_to_keep)
+    
+  return(seurat_obj)
+}
+
+# Iterate over each Seurat object and perform quality control
+for (obj_name in seurat_object_names) {
+  # Get the Seurat object
+  seurat_obj <- get(obj_name)
+  
+  # Perform quality control
+  filtered_seurat_obj <- filter_seurat_object(seurat_obj)
+
+  # Use the folder_name variable to create the file name
+  file_name <- paste0(obj_name, "_filtered.rds")
+  file_path <- paste0(subject_data_path,"saved_RDS/", file_name)
+  
+  # Save the filtered Seurat object with the specified prefix
+  saveRDS(filtered_seurat_obj, file = file_path)
+}
+
+# Print completion message
+cat("Filtering and saving of Seurat objects completed.\n")
+
+
+
+
+
+
+
+
+
 
 
 
