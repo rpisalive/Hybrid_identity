@@ -1,4 +1,4 @@
-This is the repository page for the hybrid identity project. Scripts of different analysis are stored here.
+This is the repository for the hybrid identity project. Scripts of different analysis are stored here.
 liver.r is the latest pipeline which you could load .mtx & .txt data (must be gziped) and carry out filtering automatically.
 
 Prerequisites:
