@@ -1,15 +1,13 @@
 library(Seurat)
 
 #Define the organ/tissue to build the data path
-study_subject <- "liver/"
+study_subject <- "lung/"
 #modify the path according to your data storage location
 raw_data_path <- "/parallel_scratch/mp01950/raw_data/"
 subject_data_path <- paste(raw_data_path, study_subject, sep = "")
 setwd(subject_data_path)
 
-#ONLY RUN THIS PART IF YOU START WITH RAW DATA (e.g. .mtx,.txt)
-#GSE98638, SMART seq data, loading the unprocessed matrix
-#GSE156625, scRNA seq data, part of GSE156337, loading the unprocessed matrix
+#ONLY RUN THIS PART IF YOU START WITH RAW DATA (e.g. .mtx,.txt,.tsv)
 
 # Get the list of all subfolders
 folders <- list.dirs(subject_data_path, recursive = FALSE)
@@ -22,9 +20,9 @@ for (folder in folders) {
   # List all gzip files in the folder
   gz_files <- list.files(folder, pattern = "\\.gz$", full.names = TRUE)
   
-  # Initialize a flag to check if the folder contains 'mtx' files
+  # Initialize a flag to check if the folder contains the corresponding suffix
   contains_mtx <- any(grepl("mtx\\.gz$", gz_files))
-  contains_txt <- any(grepl("txt\\.gz$", gz_files))
+  contains_txt_or_tsv <- any(grepl("\\.(txt|tsv)\\.gz$", gz_files))
   
   if (contains_mtx) {
     # Load the data using Read10X
@@ -45,9 +43,9 @@ for (folder in folders) {
 
     #Save the seurat object as .rds
     saveRDS(seurat_object, file = file_path)
-  } else if (contains_txt) {
+  } else if (contains_txt_or_tsv) {
     # Load the 'txt.gz' file using read.delim
-    txt_file <- gz_files[grepl("txt\\.gz$", gz_files)]
+    txt_file <- gz_files[grepl("\\.(txt|tsv)\\.gz$", gz_files)]
     data <- read.delim(gzfile(txt_file), sep = "\t", header = TRUE)
     
     # Find the first column with non-integer data
@@ -98,57 +96,71 @@ seurat_objects <- sapply(all_objects, function(x) {
 seurat_object_names <- names(seurat_objects)[seurat_objects]
 
 # Function to perform quality control on a Seurat object
-filter_seurat_object <- function(seurat_obj) {
+filter_seurat_object <- function(seurat_obj, seurat_version) {
   # Filter cells with less than 500 genes
   seurat_obj <- subset(seurat_obj, subset = nFeature_RNA >= 500)
-  
+
   # Calculate the percentage of mitochondrial reads
   seurat_obj[["percent.mt"]] <- PercentageFeatureSet(seurat_obj, pattern = "^MT-")
-  
+
   # Filter cells with more than 20% mitochondrial reads
   seurat_obj <- subset(seurat_obj, subset = percent.mt <= 20)
-  
-  # Further filter cells with 0 counts for CD3D, CD3E, or CD3G genes, for Seurat V4
-  #seurat_obj <- subset(seurat_obj, subset = CD3D > 0 & CD3E > 0 & CD3G > 0)
 
-  # Further filter cells with 0 counts for CD3D, CD3E, or CD3G genes, for Seurat V5
-  # Fetch data for CD3D, CD3E, and CD3G
-  gene_data <- FetchData(seurat_obj, vars = c("CD3D", "CD3E", "CD3G"))
-  # Identify cells that meet the filtering criteria
-  cells_to_keep <- rownames(gene_data)[gene_data$CD3D > 0 & gene_data$CD3E > 0 & gene_data$CD3G > 0]
-  # Subset the Seurat object to keep only the selected cells
-  seurat_obj <- subset(seurat_obj, cells = cells_to_keep)
+  if (seurat_version == 4) {
+    # Further filter cells with 0 counts for CD3D, CD3E, or CD3G genes, for Seurat V4
+    features_to_check <- c("CD3D", "CD3E", "CD3G")
+    if (!all(features_to_check %in% rownames(seurat_obj))) {
+      # Print a message and return NULL if any of the features are missing
+      cat("Seurat object", obj_name, "does not have either CD3D, CD3E, or CD3G feature.\n")
+      return(NULL)
+    }
+    seurat_obj <- subset(seurat_obj, subset = CD3D > 0 & CD3E > 0 & CD3G > 0)
+  } else {
+    # Further filter cells with 0 counts for CD3D, CD3E, or CD3G genes, for Seurat V5
+    # Check if the Seurat object has the features CD3D, CD3E, and CD3G
+    features_to_check <- c("CD3D", "CD3E", "CD3G")
+    if (!all(features_to_check %in% rownames(seurat_obj))) {
+      # Print a message and return NULL if any of the features are missing
+      cat("Seurat object", obj_name, "does not have either CD3D, CD3E, or CD3G feature.\n")
+      return(NULL)
+    }
+
+    # Fetch data for CD3D, CD3E, and CD3G
+    gene_data <- FetchData(seurat_obj, vars = features_to_check)
     
+    # Identify cells that meet the filtering criteria
+    cells_to_keep <- rownames(gene_data)[gene_data$CD3D > 0 & gene_data$CD3E > 0 & gene_data$CD3G > 0]
+    
+    # Subset the Seurat object to keep only the selected cells
+    seurat_obj <- subset(seurat_obj, cells = cells_to_keep)
+  }
+
   return(seurat_obj)
 }
+
+# Get Seurat version
+seurat_version <- as.numeric(substr(packageVersion("Seurat"), 1, 1))
 
 # Iterate over each Seurat object and perform quality control
 for (obj_name in seurat_object_names) {
   # Get the Seurat object
   seurat_obj <- get(obj_name)
-  
-  # Perform quality control
-  filtered_seurat_obj <- filter_seurat_object(seurat_obj)
 
-  # Use the folder_name variable to create the file name
-  file_name <- paste0(obj_name, "_filtered.rds")
-  file_path <- paste0(subject_data_path,"saved_RDS/", file_name)
-  
-  # Save the filtered Seurat object with the specified prefix
-  saveRDS(filtered_seurat_obj, file = file_path)
+  # Perform quality control
+  filtered_seurat_obj <- filter_seurat_object(seurat_obj, seurat_version)
+
+  # Check if the filtered Seurat object is not NULL
+  if (!is.null(filtered_seurat_obj)) {
+    # Use the folder_name variable to create the file name
+    file_name <- paste0(obj_name, "_filtered.rds")
+    file_path <- paste0(subject_data_path,"saved_RDS/", file_name)
+
+    # Save the filtered Seurat object with the specified prefix
+    saveRDS(filtered_seurat_obj, file = file_path)
+  }
 }
 
 # Print completion message
 cat("Filtering and saving of Seurat objects completed.\n")
-
-
-
-
-
-
-
-
-
-
 
 
