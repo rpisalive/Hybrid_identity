@@ -106,16 +106,7 @@ filter_seurat_object <- function(seurat_obj, seurat_version) {
   # Filter cells with more than 20% mitochondrial reads
   seurat_obj <- subset(seurat_obj, subset = percent.mt <= 20)
 
-  if (seurat_version == 4) {
-    # Further filter cells with 0 counts for CD3D, CD3E, or CD3G genes, for Seurat V4
-    features_to_check <- c("CD3D", "CD3E", "CD3G")
-    if (!all(features_to_check %in% rownames(seurat_obj))) {
-      # Print a message and return NULL if any of the features are missing
-      cat("Seurat object", obj_name, "does not have either CD3D, CD3E, or CD3G feature.\n")
-      return(NULL)
-    }
-    seurat_obj <- subset(seurat_obj, subset = CD3D > 0 & CD3E > 0 & CD3G > 0)
-  } else {
+  if (seurat_version == 5) {
     # Further filter cells with 0 counts for CD3D, CD3E, or CD3G genes, for Seurat V5
     # Check if the Seurat object has the features CD3D, CD3E, and CD3G
     features_to_check <- c("CD3D", "CD3E", "CD3G")
@@ -133,6 +124,15 @@ filter_seurat_object <- function(seurat_obj, seurat_version) {
     
     # Subset the Seurat object to keep only the selected cells
     seurat_obj <- subset(seurat_obj, cells = cells_to_keep)
+  } else {
+    # Further filter cells with 0 counts for CD3D, CD3E, or CD3G genes, for Seurat V1, V2, V3, V4
+    features_to_check <- c("CD3D", "CD3E", "CD3G")
+    if (!all(features_to_check %in% rownames(seurat_obj))) {
+      # Print a message and return NULL if any of the features are missing
+      cat("Seurat object", obj_name, "does not have either CD3D, CD3E, or CD3G feature.\n")
+      return(NULL)
+    }
+    seurat_obj <- subset(seurat_obj, subset = CD3D > 0 & CD3E > 0 & CD3G > 0)
   }
 
   return(seurat_obj)
