@@ -7,7 +7,7 @@ raw_data_path <- "/parallel_scratch/mp01950/raw_data/"
 subject_data_path <- paste(raw_data_path, study_subject, sep = "")
 setwd(subject_data_path)
 
-#ONLY RUN THIS PART IF YOU START WITH RAW DATA (e.g. .mtx,.txt,.tsv)
+# ONLY RUN THIS PART IF YOU START WITH RAW DATA (e.g. .mtx,.txt,.tsv)
 
 # Get the list of all subfolders
 folders <- list.dirs(subject_data_path, recursive = FALSE)
@@ -41,18 +41,25 @@ for (folder in folders) {
     file_name <- paste0(folder_name, ".rds")
     file_path <- paste0(subject_data_path,"saved_RDS/", file_name)
 
-    #Save the seurat object as .rds
+    # Save the Seurat object as .rds
     saveRDS(seurat_object, file = file_path)
   } else if (contains_txt_or_tsv) {
-    # Load the 'txt.gz' file using read.delim
+    # Load the 'txt.gz' or 'tsv.gz' file using read.delim
     txt_file <- gz_files[grepl("\\.(txt|tsv)\\.gz$", gz_files)]
     data <- read.delim(gzfile(txt_file), sep = "\t", header = TRUE)
     
+    # Check if the file is a .tsv.gz and transpose the data if necessary
+    if (grepl("\\.tsv\\.gz$", txt_file)) {
+      data <- t(data)
+      colnames(data) <- data[1, ]
+      data <- data[-1, ]
+    }
+    
     # Find the first column with non-integer data
     non_integer_col <- which(sapply(data, function(x) any(!is.integer(x))))[1]
-    if (!is.na(non_integer_col)) {
-      #Replace all 'NA' with the values from the -1 column on the same row        
-      data[which(is.na(data[[non_integer_col]])),non_integer_col] <- data[which(is.na(data[[non_integer_col]])), non_integer_col-1]
+    if (!is.na(non_integer_col) && grepl("\\.txt\\.gz$", txt_file)) {
+      # Replace all 'NA' with the values from the -1 column on the same row
+      data[which(is.na(data[[non_integer_col]])), non_integer_col] <- data[which(is.na(data[[non_integer_col]])), non_integer_col-1]
       # Make the first non-integer column as the rownames
       rownames(data) <- data[, non_integer_col]
       
@@ -73,15 +80,15 @@ for (folder in folders) {
     file_name <- paste0(folder_name, ".rds")
     file_path <- paste0(subject_data_path,"saved_RDS/", file_name)
 
-    #Save the seurat object as .rds
+    # Save the Seurat object as .rds
     saveRDS(seurat_object, file = file_path)
                                     
     # Remove the dataframe object from the environment
     rm(data)
   }
 }
-#Remove the seurat object & data_matrix
-rm(data_matrix,seurat_object)
+# Remove the seurat object & data_matrix
+rm(data_matrix, seurat_object)
 
 # List all objects in the environment
 all_objects <- ls()
@@ -106,34 +113,29 @@ filter_seurat_object <- function(seurat_obj, seurat_version) {
   # Filter cells with more than 20% mitochondrial reads
   seurat_obj <- subset(seurat_obj, subset = percent.mt <= 20)
 
-  if (seurat_version == 5) {
-    # Further filter cells with 0 counts for CD3D, CD3E, or CD3G genes, for Seurat V5
-    # Check if the Seurat object has the features CD3D, CD3E, and CD3G
-    features_to_check <- c("CD3D", "CD3E", "CD3G")
-    if (!all(features_to_check %in% rownames(seurat_obj))) {
-      # Print a message and return NULL if any of the features are missing
-      cat("Seurat object", obj_name, "does not have either CD3D, CD3E, or CD3G feature.\n")
-      return(NULL)
-    }
+  # Define features to check
+  features_to_check <- c("CD3D", "CD3E", "CD3G")
 
-    # Fetch data for CD3D, CD3E, and CD3G
-    gene_data <- FetchData(seurat_obj, vars = features_to_check)
-    
-    # Identify cells that meet the filtering criteria
-    cells_to_keep <- rownames(gene_data)[gene_data$CD3D > 0 & gene_data$CD3E > 0 & gene_data$CD3G > 0]
-    
-    # Subset the Seurat object to keep only the selected cells
-    seurat_obj <- subset(seurat_obj, cells = cells_to_keep)
-  } else {
-    # Further filter cells with 0 counts for CD3D, CD3E, or CD3G genes, for Seurat V1, V2, V3, V4
-    features_to_check <- c("CD3D", "CD3E", "CD3G")
-    if (!all(features_to_check %in% rownames(seurat_obj))) {
-      # Print a message and return NULL if any of the features are missing
-      cat("Seurat object", obj_name, "does not have either CD3D, CD3E, or CD3G feature.\n")
-      return(NULL)
-    }
-    seurat_obj <- subset(seurat_obj, subset = CD3D > 0 & CD3E > 0 & CD3G > 0)
+  # Check if the Seurat object has the features CD3D, CD3E, and CD3G
+  if (!all(features_to_check %in% rownames(seurat_obj))) {
+    cat("Seurat object does not have either CD3D, CD3E, or CD3G feature.\n")
+    return(NULL)
   }
+
+  # Fetch data for CD3D, CD3E, and CD3G
+  gene_data <- FetchData(seurat_obj, vars = features_to_check)
+
+  # Identify cells that meet the filtering criteria
+  cells_to_keep <- rownames(gene_data)[gene_data$CD3D > 0 & gene_data$CD3E > 0 & gene_data$CD3G > 0]
+
+  # Check if cells_to_keep has length 0
+  if (length(cells_to_keep) == 0) {
+    cat("No cells pass the CD3D, CD3E, and CD3G filter.\n")
+    return(NULL)
+  }
+
+  # Subset the Seurat object to keep only the selected cells
+  seurat_obj <- subset(seurat_obj, cells = cells_to_keep)
 
   return(seurat_obj)
 }
