@@ -1,11 +1,44 @@
 library(Seurat)
+library(Matrix)
 
 #Define the organ/tissue to build the data path
 study_subject <- "lung/"
 #modify the path according to your data storage location
 raw_data_path <- "/parallel_scratch/mp01950/raw_data/"
+
 subject_data_path <- paste(raw_data_path, study_subject, sep = "")
 setwd(subject_data_path)
+
+# Function to read the data files and rename duplicate feature names
+read_data_files <- function(barcodes_path, features_path, matrix_path) {
+  # Read in the matrix file
+  counts <- readMM(matrix_path)
+  
+  # Read in the barcodes and features files
+  barcodes <- read.table(barcodes_path, header = FALSE, stringsAsFactors = FALSE)
+  features <- read.table(features_path, header = FALSE, stringsAsFactors = FALSE, sep = "\t")
+  
+  # Check for duplicate feature names in features$V2
+  duplicate_features <- duplicated(features$V2) | duplicated(features$V2, fromLast = TRUE)
+  
+  if (any(duplicate_features)) {
+    message("Renaming duplicate feature names in features$V2.")
+    
+    for (i in which(duplicate_features)) {
+      if (startsWith(features$V1[i], "ENSG")) {
+        features$V2[i] <- features$V1[i]
+      } else {
+        features$V2[i] <- paste0(features$V2[i], "_", features$V3[i])
+      }
+    }
+  }
+  
+  # Add row and column names to the matrix
+  colnames(counts) <- barcodes$V1
+  rownames(counts) <- features$V2
+  
+  return(counts)
+}
 
 # ONLY RUN THIS PART IF YOU START WITH RAW DATA (e.g. .mtx,.txt,.tsv)
 
@@ -19,14 +52,21 @@ for (folder in folders) {
   
   # List all gzip files in the folder
   gz_files <- list.files(folder, pattern = "\\.gz$", full.names = TRUE)
-  
+
   # Initialize a flag to check if the folder contains the corresponding suffix
-  contains_mtx <- any(grepl("mtx\\.gz$", gz_files))
-  contains_txt_or_tsv <- any(grepl("\\.(txt|tsv)\\.gz$", gz_files))
-  
-  if (contains_mtx) {
-    # Load the data using Read10X
-    dgCMatrix_object <- Read10X(data.dir = folder)
+  contains_mtx <- any(grepl("matrix\\.mtx\\.gz$", gz_files))
+  contains_barcodes <- any(grepl("barcodes\\.tsv\\.gz$", gz_files))
+  contains_features <- any(grepl("features\\.tsv\\.gz$", gz_files))
+  contains_txt_or_tsv <- !contains_mtx && any(grepl("\\.(txt|tsv)\\.gz$", gz_files))
+
+  if (contains_mtx && contains_barcodes && contains_features) {
+    # Identify the specific file paths with prefixes
+    barcodes_file <- gz_files[grepl("barcodes.tsv.gz$", gz_files)]
+    features_file <- gz_files[grepl("features.tsv.gz$", gz_files)]
+    matrix_file <- gz_files[grepl("matrix.mtx.gz$", gz_files)]
+    
+    # Load the data using the custom read_data_files function
+    dgCMatrix_object <- read_data_files(barcodes_file, features_file, matrix_file)
     
     # Create a Seurat object from the dgCMatrix object
     seurat_object <- CreateSeuratObject(counts = dgCMatrix_object)
