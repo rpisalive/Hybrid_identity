@@ -65,12 +65,34 @@ objects_to_remove <- c("meta_data", "seurat_object", "seurat_objects")
 rm(list = objects_to_remove)
 
 
-#Before inserting meta.data, check if the rownames(Seurat_object[["RNA"]]$counts) match with those in the metadata, if not, correct here.
-#rownames(GSE98638_filtered[["RNA"]]$counts) renaming
-#meta_data <- GSE98638_filtered@meta.data
-#rownames(meta_data) <- gsub("\\.", "-", rownames(meta_data))
-#GSE98638_filtered@meta.data <- meta_data
-#rm(meta_data)
+#Replace all "." in rownames(SeuratObject@meta.data) with "-", if not applicable, please adjust the code.
+# Get a list of all objects in the environment
+all_objects <- ls()
+
+# Iterate through all objects and apply the transformation if they are Seurat objects
+for (obj_name in all_objects) {
+  obj <- get(obj_name)
+  if (inherits(obj, "Seurat")) {
+    # Print the object name being processed
+    cat("Processing:", obj_name, "\n")
+
+    # Replace "." with "-" in the row names of @meta.data
+    rownames(obj@meta.data) <- gsub("\\.", "-", rownames(obj@meta.data))
+
+    # Assign the modified object back to the original name
+    assign(obj_name, obj)
+  }
+}
+
+# Verify the changes
+for (obj_name in all_objects) {
+  obj <- get(obj_name)
+  if (inherits(obj, "Seurat")) {
+    cat("Row names of", obj_name, "after modification:\n")
+    print(head(rownames(obj@meta.data)))
+  }
+}
+
 
 #Metadata transfer
 # Iterate over each metadata data frame
