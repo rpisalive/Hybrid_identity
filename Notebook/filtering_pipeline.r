@@ -9,14 +9,6 @@ raw_data_path <- "/parallel_scratch/mp01950/raw_data/"
 subject_data_path <- paste(raw_data_path, study_subject, sep = "")
 setwd(subject_data_path)
 
-#For GSE115469 .RData
-#load("/parallel_scratch/mp01950/raw_data/liver/GSE115469/HumanLiver.RData")
-#HumanLiverSeurat <- UpdateSeuratObject(object = HumanLiverSeurat)
-#GSE115469 <- HumanLiverSeurat[["RNA"]]$counts
-#GSE115469 <- CreateSeuratObject(counts = GSE115469)
-#saveRDS(GSE115469, file = "GSE115469.rds")
-
-
 # Function to read the data files and rename duplicate feature names
 read_data_files <- function(barcodes_path, features_path, matrix_path) {
   # Read in the matrix file
