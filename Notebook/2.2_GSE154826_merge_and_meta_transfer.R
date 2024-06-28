@@ -81,7 +81,7 @@ pattern <- "GSE154826_batch_\\d+_filtered\\.rds"
 filtered_files <- grep(pattern, all_files, value = TRUE)
 
 # Merge all Seurat objects into one
-batch_ids <- gsub("GSE154826_batch_(\\d+)_filtered\\.rds", "\\1", names(seurat_objects))
+batch_ids <- gsub("_filtered.rds", "", names(seurat_objects))
 merged_seurat <- merge(x = seurat_objects[[1]], y = seurat_objects[-1], add.cell.ids = batch_ids)
 
 # Save the merged Seurat object as .rds file
