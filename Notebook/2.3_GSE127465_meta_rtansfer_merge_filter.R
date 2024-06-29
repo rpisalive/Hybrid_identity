@@ -1,6 +1,9 @@
-#This script is to rename all .rds files for GSE127465, transfer metadata and merging
-#Reason: The filtering pipeline would yield seurat objects with only 1 cell,
-#which cannot be merged with the standard merging pipeline.
+#This script is to rename all _filtered.rds files for GSE127465, transfer metadata, QC, then merging
+#Starts with GSM3635XXX.rds (Not filtered)
+#Reason for individual workflow: the matching of the metadata relies on both "Library" and "Barcode"
+#Seuat objects with only 1 cell must be removed.
+#Tried to merge the original datasets then filter, failed.
+
 # Load necessary libraries
 library(Seurat)
 
@@ -61,15 +64,8 @@ for (rds_file in rds_files) {
   seurat_objects[[object_name]] <- seurat_object
 }
 
-# Print the names of all loaded Seurat objects
-cat("Loaded Seurat objects:\n")
-print(names(seurat_objects))
-
 # Remove any Seurat objects with names starting with "GSE"
 seurat_objects <- seurat_objects[!grepl("^GSE", names(seurat_objects))]
-
-# Remove Seurat objects with names containing the "filtered" string
-seurat_objects <- seurat_objects[!grepl("filtered", names(seurat_objects))]
 
 # Set the path to the metadata file
 metadata_file_path <- file.path("saved_RDS", "metadata", "GSE127465_meta.tsv.gz")
@@ -106,16 +102,29 @@ rm(matching_seurat_object)
 rm(metadata_df)
 rm(seurat_object)
 
-#Merging
-# Extract the first Seurat object
-GSM3635278_human_p1t1 <- seurat_objects[[1]]
-# Remove the first Seurat object from the list
-seurat_objects <- seurat_objects[-1]
-batch_ids <- c("GSM3635278_human_p1t1", names(seurat_objects))
-merged_obj <- merge(GSM3635278_human_p1t1, y = seurat_objects, add.cell.ids = batch_ids)
+# Loop through each element of the list & save the seurat objects individually
+for (i in seq_along(seurat_objects)) {
+  # Get the name of the current element
+  seurat_name <- names(seurat_objects)[i]
+  
+  # Extract the Seurat object
+  seurat_obj <- seurat_objects[[i]]
+  
+  # Assign the Seurat object to a variable with the name from the list
+  assign(seurat_name, seurat_obj)
+}
 
-rm(GSM3635278_human_p1t1)
-rm(seurat_objects)
+# List all objects in the environment
+all_objects <- ls()
+
+# Check which of these objects are of class 'Seurat'
+seurat_objects <- sapply(all_objects, function(x) {
+  obj <- get(x)
+  class(obj) == "Seurat"
+})
+
+# Extract the names of Seurat objects
+seurat_object_names <- names(seurat_objects)[seurat_objects]
 
 # Function to perform quality control on a Seurat object
 filter_seurat_object <- function(seurat_obj, seurat_version) {
@@ -158,9 +167,89 @@ filter_seurat_object <- function(seurat_obj, seurat_version) {
 # Get Seurat version
 seurat_version <- as.numeric(substr(packageVersion("Seurat"), 1, 1))
 
-# Perform quality control
-filtered_seurat_obj <- filter_seurat_object(merged_obj, seurat_version)
+# Iterate over each Seurat object and perform quality control
+for (obj_name in seurat_object_names) {
+  # Get the Seurat object
+  seurat_obj <- get(obj_name)
+  
+  # Perform quality control
+  filtered_seurat_obj <- filter_seurat_object(seurat_obj, seurat_version)
+  
+  # Check if the filtered Seurat object is not NULL
+  if (!is.null(filtered_seurat_obj)) {
+    # Use the folder_name variable to create the file name
+    file_name <- paste0(obj_name, "_filtered.rds")
+    file_path <- paste0(subject_data_path,"saved_RDS/", file_name)
+    
+    # Save the filtered Seurat object with the specified prefix
+    saveRDS(filtered_seurat_obj, file = file_path)
+  }
+}
+
+# Define the paths to the directories
+saved_rds_dir <- "saved_RDS"
+
+# Get a list of all .rds files in the saved_RDS directory
+rds_files <- list.files(path = saved_rds_dir, pattern = "\\.rds$", full.names = TRUE)
+
+# Initialize lists to store the Seurat objects and their corresponding metadata
+seurat_objects <- list()
+
+# Loop through each .rds file and load the Seurat object
+for (file in rds_files) {
+  # Extract the name of the file without extension
+  object_name <- tools::file_path_sans_ext(basename(file))
+  
+  # Read the Seurat object from the .rds file
+  seurat_object <- readRDS(file)
+  
+  # Assign the Seurat object to a variable in the environment
+  assign(object_name, seurat_object)
+  
+  # Store the Seurat object in the list
+  seurat_objects[[object_name]] <- seurat_object
+}
+
+# List all objects in the current environment
+all_objects <- ls()
+
+# Identify objects to remove:
+# - Those that start with "GSE"
+# - Those that contain "seurat"
+# - Those that do not contain "filtered"
+remove_objects <- all_objects[grep("^GSE|seurat", all_objects)]
+filtered_objects <- all_objects[!grepl("filtered", all_objects)]
+remove_objects <- unique(c(remove_objects, filtered_objects))
+
+# Remove the identified objects
+rm(list = remove_objects)
+
+# Remove seurat objects with only 1 cell
+rm(GSM3635285_human_p2t1_filtered)
+rm(GSM3635286_human_p2t2_filtered)
+
+# Initialize an empty list to store Seurat objects
+seurat_objects <- list()
+
+# List all objects in the current environment
+all_objects <- ls()
+
+# Loop through all objects and store Seurat objects in the list
+for (obj_name in all_objects) {
+  obj <- get(obj_name)
+  if (inherits(obj, "Seurat")) {
+    seurat_objects[[obj_name]] <- obj
+  }
+}
+
+#Merging
+# Extract the first Seurat object
+GSM3635278_human_p1t1_filtered <- seurat_objects[[1]]
+# Remove the first Seurat object from the list
+seurat_objects <- seurat_objects[-1]
+batch_ids <- c("GSM3635278_human_p1t1_filtered", names(seurat_objects))
+merged_obj <- merge(GSM3635278_human_p1t1_filtered, y = seurat_objects, add.cell.ids = batch_ids)
 
 # Save the Seurat object as an .rds file
-saveRDS(filtered_seurat_obj, file = "saved_RDS/GSE127465_filtered_md.rds")
+saveRDS(merged_obj, file = "saved_RDS/GSE127465_filtered_md.rds")
 
