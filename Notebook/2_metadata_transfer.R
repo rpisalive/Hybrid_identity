@@ -64,7 +64,8 @@ objects_to_remove <- c("meta_data", "seurat_object", "seurat_objects")
 # Remove objects from the global environment
 rm(list = objects_to_remove)
 
-#Replace all "-" in the first column in metadata objects with ".", if not applicable, please adjust the code.
+#Replace all "-" in the first column in metadata objects with ".".
+#If the the cell_ID in your metadata is consistent with the rownames of your meta.data of your seurat objects, do not run this part.
 # Loop through each data frame in the list
 for (i in seq_along(metadata_objects)) {
   # Replace "-" with "." in the first column of each data frame
