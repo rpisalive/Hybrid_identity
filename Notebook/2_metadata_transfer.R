@@ -16,7 +16,7 @@ saved_rds_dir <- "saved_RDS"
 metadata_dir <- "saved_RDS/metadata"
 
 # Get a list of all .rds files in the saved_RDS directory
-rds_files <- list.files(path = saved_rds_dir, pattern = "\\.rds$", full.names = TRUE)
+rds_files <- list.files(path = saved_rds_dir, pattern = "_filtered\\.rds$", full.names = TRUE)
 
 # Initialize lists to store the Seurat objects and their corresponding metadata
 seurat_objects <- list()
@@ -64,35 +64,12 @@ objects_to_remove <- c("meta_data", "seurat_object", "seurat_objects")
 # Remove objects from the global environment
 rm(list = objects_to_remove)
 
-
-#Replace all "." in rownames(SeuratObject@meta.data) with "-", if not applicable, please adjust the code.
-# Get a list of all objects in the environment
-all_objects <- ls()
-
-# Iterate through all objects and apply the transformation if they are Seurat objects
-for (obj_name in all_objects) {
-  obj <- get(obj_name)
-  if (inherits(obj, "Seurat")) {
-    # Print the object name being processed
-    cat("Processing:", obj_name, "\n")
-
-    # Replace "." with "-" in the row names of @meta.data
-    rownames(obj@meta.data) <- gsub("\\.", "-", rownames(obj@meta.data))
-
-    # Assign the modified object back to the original name
-    assign(obj_name, obj)
-  }
+#Replace all "-" in the first column in metadata objects with ".", if not applicable, please adjust the code.
+# Loop through each data frame in the list
+for (i in seq_along(metadata_objects)) {
+  # Replace "-" with "." in the first column of each data frame
+  metadata_objects[[i]][, 1] <- gsub("-", ".", metadata_objects[[i]][, 1])
 }
-
-# Verify the changes
-for (obj_name in all_objects) {
-  obj <- get(obj_name)
-  if (inherits(obj, "Seurat")) {
-    cat("Row names of", obj_name, "after modification:\n")
-    print(head(rownames(obj@meta.data)))
-  }
-}
-
 
 #Metadata transfer
 # Iterate over each metadata data frame

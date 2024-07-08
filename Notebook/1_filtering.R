@@ -56,13 +56,13 @@ for (folder in folders) {
   # Initialize a flag to check if the folder contains the corresponding suffix
   contains_mtx <- any(grepl("matrix\\.mtx\\.gz$", gz_files))
   contains_barcodes <- any(grepl("barcodes\\.tsv\\.gz$", gz_files))
-  contains_features <- any(grepl("features\\.tsv\\.gz$", gz_files))
+  contains_features <- any(grepl("features|genes\\.tsv\\.gz$", gz_files))
   contains_txt_or_tsv <- !contains_mtx && any(grepl("\\.(txt|tsv)\\.gz$", gz_files))
 
   if (contains_mtx && contains_barcodes && contains_features) {
     # Identify the specific file paths with prefixes
     barcodes_file <- gz_files[grepl("barcodes.tsv.gz$", gz_files)]
-    features_file <- gz_files[grepl("features.tsv.gz$", gz_files)]
+    features_file <- gz_files[grepl("(features|genes)\\.tsv\\.gz$", gz_files)]
     matrix_file <- gz_files[grepl("matrix.mtx.gz$", gz_files)]
     
     # Load the data using the custom read_data_files function
