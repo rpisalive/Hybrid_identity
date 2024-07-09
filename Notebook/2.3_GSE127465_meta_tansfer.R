@@ -1,5 +1,6 @@
 #This script is to rename all _filtered.rds files for GSE127465 and transfer metadata.
 #Reason for individual workflow: the matching of the metadata relies on both "Library" and "Barcode"
+#Original count data in corresponding directories are required to run this.
 #Seuat objects with only 1 cell will (and must) be removed due to the design logic of Seurat Objects.
 
 # Load necessary libraries
