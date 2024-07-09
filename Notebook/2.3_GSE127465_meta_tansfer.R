@@ -33,10 +33,10 @@ for (gsm_dir in gsm_dirs) {
     new_name <- gsub("_raw_counts.tsv.gz$", "", basename(tsv_file))
     
     # Define the current .rds file path in the saved_RDS directory
-    current_rds_path <- file.path(saved_rds_dir, paste0(base_gsm_name, ".rds"))
+    current_rds_path <- file.path(saved_rds_dir, paste0(base_gsm_name, "_filtered.rds"))
     
     # Define the new .rds file path
-    new_rds_path <- file.path(saved_rds_dir, paste0(new_name, ".rds"))
+    new_rds_path <- file.path(saved_rds_dir, paste0(new_name, "_filtered.rds"))
     
     # Rename the .rds file
     if (file.exists(current_rds_path)) {
@@ -77,7 +77,7 @@ for (i in 1:nrow(metadata_df)) {
   barcode_value <- metadata_df$Barcode[i]
   
   # Find the matching Seurat object based on the Library value (YYY)
-  matching_objects <- grep(paste0("_", library_value, "$"), names(seurat_objects), value = TRUE)
+  matching_objects <- grep(paste0("_", library_value), names(seurat_objects), value = TRUE)
   
   # If there is a matching Seurat object
   if (length(matching_objects) == 1) {
