@@ -179,3 +179,8 @@ for (i in seq_along(seurat_objects)) {
   # Save the Seurat object with the new name
   saveRDS(seurat_objects[[i]], file = new_name)
 }
+
+#Merging for GSE154826
+batch_ids <- sub(".*_(ID_\\d+)_filtered$", "\\1", names(seurat_objects))
+GSE154826 <- merge(seurat_objects[[1]], y = seurat_objects[2:77], add.cell.ids = batch_ids)
+saveRDS(GSE154826, file = "saved_RDS/GSE154826_filtered_md.rds")
