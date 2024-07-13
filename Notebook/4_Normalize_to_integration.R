@@ -43,13 +43,13 @@ for (i in seq_along(data_list)) {
 }
 
 #Find integration anchors
-anchors <- FindIntegrationAnchors(object.list = data_list, dims = 1:30, k.filter = 30)
+anchors <- FindIntegrationAnchors(object.list = data_list)
 
 #Save anchors
 saveRDS(anchors, file = "anchors.rds")
 
 #Integration for batch effect
-integrated_data <- IntegrateData(anchorset = anchors, dims = 1:30, k.weight = 75)
+integrated_data <- IntegrateData(anchorset = anchors)
 
 #Save anchors
 saveRDS(integrated_data, file = "Integrated_dataset.rds")
