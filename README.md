@@ -1,5 +1,6 @@
 This is the repository for the hybrid identity project. Scripts of different analysis are stored here.
 Raw data in .mtx , .txt & .tsv format (must be gziped) are suuported.
+Pipeline tested with Seurat V4.
 
 Prerequisites:
 1. A corresponding file architecture:
