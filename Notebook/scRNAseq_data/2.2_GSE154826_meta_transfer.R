@@ -10,7 +10,7 @@ library(stringr)
 library(tibble)
 
 #Define the organ/tissue to build the data path
-study_subject <- "lung/"
+study_subject <- "Lung/"
 #modify the path according to your data storage location
 raw_data_path <- "/parallel_scratch/mp01950/raw_data/"
 
@@ -23,7 +23,7 @@ metadata_path <- file.path(subject_data_path, "saved_RDS", "metadata", "GSE15482
 all_files <- list.files(directory_path, pattern = "\\.rds$", full.names = TRUE)
 
 # Filter files matching the pattern "GSE154826_amp_batch_XXX_filtered"
-pattern <- "GSE154826_amp_batch_ID_\\d+_filtered\\.rds"
+pattern <- "GSE154826_batch_\\d+_filtered\\.rds"
 filtered_files <- grep(pattern, all_files, value = TRUE)
 
 # Initialize a list to store the Seurat objects
@@ -60,7 +60,7 @@ for (i in seq_along(seurat_objects)) {
   seurat_obj@meta.data$cell_ID <- rownames(seurat_obj@meta.data)
   
   # Extract the XXX number from the Seurat object name
-  amp_batch_ID <- str_extract(seurat_name, "(?<=GSE154826_amp_batch_ID_)\\d+(?=_filtered)")
+  amp_batch_ID <- str_extract(seurat_name, "(?<=GSE154826_batch_)\\d+(?=_filtered)")
   
   #Add amp_batch_ID & sample_ID columns into meta.data & list of column names to initialize with NA
   columns_to_initialize <- c(
@@ -146,15 +146,15 @@ for (i in seq_along(seurat_objects)) {
         }
       }
     }
-  # Add temp_meta to seurat_obj@meta.data for matching cell IDs
-  temp_meta <- temp_meta[, !names(temp_meta) %in% c("amp_batch_ID", "sample_ID")]
-  seurat_obj@meta.data <- left_join(seurat_obj@meta.data, temp_meta, by = "cell_ID", suffix = c("", ".b")) %>%
-    mutate(cluster = coalesce(cluster, cluster.b),
-           lineage = coalesce(lineage, lineage.b),
-           sub_lineage = coalesce(sub_lineage, sub_lineage.b),
-           norm_group = coalesce(norm_group, norm_group.b),
-           lig_rec_group = coalesce(lig_rec_group, lig_rec_group.b)) %>%
-    select(-cluster.b, -matches("\\.b$"))
+    # Add temp_meta to seurat_obj@meta.data for matching cell IDs
+    temp_meta <- temp_meta[, !names(temp_meta) %in% c("amp_batch_ID", "sample_ID")]
+    seurat_obj@meta.data <- left_join(seurat_obj@meta.data, temp_meta, by = "cell_ID", suffix = c("", ".b")) %>%
+      mutate(cluster = coalesce(cluster, cluster.b),
+             lineage = coalesce(lineage, lineage.b),
+             sub_lineage = coalesce(sub_lineage, sub_lineage.b),
+             norm_group = coalesce(norm_group, norm_group.b),
+             lig_rec_group = coalesce(lig_rec_group, lig_rec_group.b)) %>%
+      select(-cluster.b, -matches("\\.b$"))
   }
   
   # Rename row names, remove cell_ID and update the Seurat object in the list

@@ -2,7 +2,7 @@ library(Seurat)
 library(Matrix)
 
 #Define the organ/tissue to build the data path
-study_subject <- "lung/"
+study_subject <- "Lung/"
 #modify the path according to your data storage location
 raw_data_path <- "/parallel_scratch/mp01950/raw_data/"
 
@@ -18,17 +18,36 @@ read_data_files <- function(barcodes_path, features_path, matrix_path) {
   barcodes <- read.table(barcodes_path, header = FALSE, stringsAsFactors = FALSE)
   features <- read.table(features_path, header = FALSE, stringsAsFactors = FALSE, sep = "\t")
   
-  # Check for duplicate feature names in features$V2
-  duplicate_features <- duplicated(features$V2) | duplicated(features$V2, fromLast = TRUE)
-  
-  if (any(duplicate_features)) {
-    message("Renaming duplicate feature names in features$V2.")
+  # Check if there are "Custom" strings in the third column
+  if (any(features$V3 == "Custom")) {
     
-    for (i in which(duplicate_features)) {
-      if (startsWith(features$V1[i], "ENSG")) {
-        features$V2[i] <- features$V1[i]
-      } else {
-        features$V2[i] <- paste0(features$V2[i], "_", features$V3[i])
+    # Identify duplicated items in the second column
+    duplicate_features <- duplicated(features$V2) | duplicated(features$V2, fromLast = TRUE)
+    
+    if (any(duplicate_features)) {
+      message("Modifying feature names for 'Custom' entries in features$V2.")
+      
+      for (i in which(duplicate_features)) {
+        if (features$V3[i] == "Custom") {
+          # Modify the second column to "Custom" if the third column is "Custom"
+          features$V2[i] <- "Custom"
+        }
+        # If the third column is not "Custom", leave the feature name as is
+      }
+    }
+  } else {
+    # Check for duplicate feature names in features$V2
+    duplicate_features <- duplicated(features$V2) | duplicated(features$V2, fromLast = TRUE)
+    
+    if (any(duplicate_features)) {
+      message("Renaming duplicate feature names in features$V2.")
+      
+      for (i in which(duplicate_features)) {
+        if (startsWith(features$V1[i], "ENSG")) {
+          features$V2[i] <- features$V1[i]
+        } else {
+          features$V2[i] <- paste0(features$V2[i], "_", features$V3[i])
+        }
       }
     }
   }
@@ -36,6 +55,9 @@ read_data_files <- function(barcodes_path, features_path, matrix_path) {
   # Add row and column names to the matrix
   colnames(counts) <- barcodes$V1
   rownames(counts) <- features$V2
+
+  # Remove rows where row names are "Custom"
+  counts <- counts[rownames(counts) != "Custom", ]
   
   return(counts)
 }
