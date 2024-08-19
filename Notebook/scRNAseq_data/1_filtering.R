@@ -22,16 +22,14 @@ read_data_files <- function(barcodes_path, features_path, matrix_path) {
   if (any(features$V3 == "Custom")) {
     
     # Identify duplicated items in the second column
-    duplicate_features <- duplicated(features$V2) | duplicated(features$V2, fromLast = TRUE)
+    custom_features <- features$V3 == "Custom"
     
-    if (any(duplicate_features)) {
+    if (any(custom_features)) {
       message("Modifying feature names for 'Custom' entries in features$V2.")
       
-      for (i in which(duplicate_features)) {
-        if (features$V3[i] == "Custom") {
-          # Modify the second column to "Custom" if the third column is "Custom"
-          features$V2[i] <- "Custom"
-        }
+      for (i in which(custom_features)) {
+        # Modify the second column to "Custom" if the third column is "Custom"
+        features$V2[i] <- "Custom"
         # If the third column is not "Custom", leave the feature name as is
       }
     }
