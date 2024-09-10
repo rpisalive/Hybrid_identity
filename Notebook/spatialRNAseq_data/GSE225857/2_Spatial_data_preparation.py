@@ -14,26 +14,27 @@ import pandas as pd
 
 # Path setup
 
-# In[2]:
+# In[7]:
 
 
-slice_name = "C1"
-spa_path = "/parallel_scratch/mp01950/spatial_study/"
+slice_name = "C2"
+spa_path = "/parallel_scratch/mp01950/Hybrid_cell_spatial/"
 acc_no = "GSE225857/"
 slice_loc = "spatial/"+slice_name+"/"
 full_slice_path = spa_path+acc_no+slice_loc
+sub_acc_no = "GSM7058757_"
 
 
 # Spatial data loading & modification
 
-# In[3]:
+# In[8]:
 
 
 #Loading spatial data
-st_adata=sc.read_mtx(full_slice_path+"GSM7058756_"+slice_name+".matrix.mtx.gz")
-st_adata_bc=pd.read_csv(full_slice_path+"GSM7058756_"+slice_name+".barcodes.tsv.gz", header=None)
-st_adata_features=pd.read_csv(full_slice_path+"GSM7058756_"+slice_name+".features.tsv.gz",header=None, sep='\t')
-st_position=pd.read_csv(full_slice_path+'tissue_positions_list.csv', header=None)
+st_adata=sc.read_mtx(full_slice_path+sub_acc_no+slice_name+".matrix.mtx.gz")
+st_adata_bc=pd.read_csv(full_slice_path+sub_acc_no+slice_name+".barcodes.tsv.gz", header=None)
+st_adata_features=pd.read_csv(full_slice_path+sub_acc_no+slice_name+".features.tsv.gz",header=None, sep='\t')
+st_position=pd.read_csv(full_slice_path+sub_acc_no+slice_name+'_tissue_positions_list.csv', header=None)
 st_position=st_position[st_position.iloc[:, 1] == 1]
 st_position = st_position.sort_values(by=st_position.columns[0])
 st_adata = st_adata.T
@@ -49,10 +50,22 @@ st_adata.obsm["spatial"]=st_position.iloc[:, [4,5]].values
 st_adata.obs.index.name = None
 
 
-# In[7]:
+# In[9]:
 
 
 st_adata.write_h5ad(full_slice_path+slice_name+".h5ad.gz",compression="gzip")
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
 
 
 # In[ ]:

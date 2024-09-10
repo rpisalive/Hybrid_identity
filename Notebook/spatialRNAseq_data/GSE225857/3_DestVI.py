@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
+# In[1]:
 
 
 #Modules loading
 
 
-# In[1]:
+# In[2]:
 
 
 import tempfile
@@ -38,13 +38,13 @@ from io import BytesIO
 get_ipython().run_line_magic('matplotlib', 'inline')
 
 
-# In[ ]:
+# In[3]:
 
 
 #Check GPU availability & scvi-tools version
 
 
-# In[2]:
+# In[4]:
 
 
 print(f'Jax backend: {jax.default_backend()}')
@@ -54,17 +54,17 @@ scvi.settings.seed = 0
 print("Last run with scvi-tools version:", scvi.__version__)
 
 
-# In[ ]:
+# In[5]:
 
 
 #Path & plot specification setup
 
 
-# In[3]:
+# In[6]:
 
 
-slice_name = "C1"
-spa_path = "/parallel_scratch/mp01950/spatial_study/"
+slice_name = "C2"
+spa_path = "/parallel_scratch/mp01950/Hybrid_cell_spatial/"
 acc_no = "GSE225857/"
 slice_loc = "spatial/"+slice_name+"/"
 full_slice_path = spa_path+acc_no+slice_loc
@@ -76,25 +76,25 @@ get_ipython().run_line_magic('config', 'InlineBackend.print_figure_kwargs={"face
 get_ipython().run_line_magic('config', 'InlineBackend.figure_format="retina"')
 
 
-# In[ ]:
+# In[7]:
 
 
 #Single cell reference loading 
 
 
-# In[4]:
+# In[8]:
 
 
 sc_ref = sc.read_h5ad(spa_path+acc_no+"scRNA/sc_ref.h5ad.gz")
 
 
-# In[ ]:
+# In[9]:
 
 
 #Genes filtering on scRNA
 
 
-# In[5]:
+# In[10]:
 
 
 # let us filter some genes
@@ -118,7 +118,7 @@ sc.tl.umap(sc_ref)
 sc.pl.umap(sc_ref, color = "general_cell_type")
 
 
-# In[6]:
+# In[11]:
 
 
 if "CD3D" in sc_ref.var_names:
@@ -127,26 +127,26 @@ else:
     print("CD3D is not present in var_names.")
 
 
-# In[ ]:
+# In[12]:
 
 
 #Spatial data loading & layer setting
 
 
-# In[7]:
+# In[13]:
 
 
 st_adata = sc.read_h5ad(full_slice_path+slice_name+".h5ad.gz")
 st_adata.layers["counts"] = st_adata.X.copy()
 
 
-# In[ ]:
+# In[14]:
 
 
 #Intersecting genes in both scRNA and spatial RNA
 
 
-# In[8]:
+# In[15]:
 
 
 # filter genes to be the same on the spatial data
@@ -157,22 +157,22 @@ G = len(intersect)
 sc.pl.embedding(st_adata, basis="spatial", s=80)
 
 
-# In[ ]:
+# In[16]:
 
 
 #Fitting scRNA-seq model
 
 
-# In[9]:
+# In[17]:
 
 
 CondSCVI.setup_anndata(sc_ref, layer="counts", labels_key="general_cell_type")
 
 
-# In[10]:
+# In[19]:
 
 
-train = False
+train = True
 if train:
     # train the conditional VAE
     sc_model = CondSCVI(sc_ref, weight_obs=True)
@@ -183,19 +183,19 @@ else:
     sc_model = CondSCVI.load(save_dir+"sc_model/", sc_ref)
 
 
-# In[11]:
+# In[20]:
 
 
 sc_ref.obsm["X_CondSCVI"] = sc_model.get_latent_representation()
 
 
-# In[ ]:
+# In[21]:
 
 
 #Deconvolution
 
 
-# In[12]:
+# In[22]:
 
 
 sc.pp.normalize_total(st_adata, target_sum=10e4)
@@ -203,18 +203,18 @@ sc.pp.log1p(st_adata)
 st_adata.raw = st_adata
 
 
-# In[13]:
+# In[23]:
 
 
 # get dataset ready
 DestVI.setup_anndata(st_adata, layer="counts")
 
 
-# In[14]:
+# In[24]:
 
 
 # add here number of cell type
-train_st = False
+train_st = True
 if train_st:
     st_model = DestVI.from_rna_model(st_adata, sc_model, vamp_prior_p=100)
     st_model.train(max_epochs=2500, plan_kwargs={"lr":0.005})
@@ -224,13 +224,13 @@ else:
     st_model = DestVI.load(save_dir+"st_model", st_adata)
 
 
-# In[15]:
+# In[25]:
 
 
 st_adata.obsm["proportions"] = st_model.get_proportions()
 
 
-# In[16]:
+# In[26]:
 
 
 ct_list = ["B", "T", "Endothelial_cell", "Myeloid", "NK", "Plasma", "Tumor", "Fibroblast"]
@@ -239,13 +239,13 @@ for ct in ct_list:
     st_adata.obs[ct] = np.clip(data, 0, np.quantile(data, 0.99))
 
 
-# In[17]:
+# In[27]:
 
 
 sc.pl.embedding(st_adata, basis="spatial", color=ct_list, cmap="magma", s=100)
 
 
-# In[18]:
+# In[28]:
 
 
 ct_thresholds = destvi_utils.automatic_proportion_threshold(
@@ -253,13 +253,13 @@ ct_thresholds = destvi_utils.automatic_proportion_threshold(
 )
 
 
-# In[ ]:
+# In[29]:
 
 
 #Intra cell type information
 
 
-# In[19]:
+# In[30]:
 
 
 # more globally, the values of the gamma are all summarized in this dictionary of data frames
@@ -267,19 +267,19 @@ for ct, g in st_model.get_gamma().items():
     st_adata.obsm[f"{ct}_gamma"] = g
 
 
-# In[20]:
+# In[31]:
 
 
 destvi_utils.explore_gamma_space(st_model, sc_model, ct_list=ct_list, ct_thresholds=ct_thresholds)
 
 
-# In[ ]:
+# In[30]:
 
 
 #Expression of gene signatures of other cells in T cells
 
 
-# In[21]:
+# In[32]:
 
 
 #Tumor cell
@@ -309,7 +309,7 @@ plt.title(f"Imputation of {gene_name} in {ct_name}")
 plt.show()
 
 
-# In[22]:
+# In[33]:
 
 
 #Fibroblasts
@@ -339,7 +339,7 @@ plt.title(f"Imputation of {gene_name} in {ct_name}")
 plt.show()
 
 
-# In[23]:
+# In[34]:
 
 
 #Endothelial cells
@@ -369,7 +369,7 @@ plt.title(f"Imputation of {gene_name} in {ct_name}")
 plt.show()
 
 
-# In[24]:
+# In[35]:
 
 
 #Monocytes/macrophages
@@ -399,7 +399,7 @@ plt.title(f"Imputation of {gene_name} in {ct_name}")
 plt.show()
 
 
-# In[25]:
+# In[36]:
 
 
 #B/Plasma
@@ -429,13 +429,13 @@ plt.title(f"Imputation of {gene_name} in {ct_name}")
 plt.show()
 
 
-# In[26]:
+# In[37]:
 
 
 ct = "T"
 imputation = st_model.get_scale_for_ct(ct)
 color = np.log(1 + 1e4 * imputation["CD19"].values)
-threshold = 0.3
+threshold = 0.2
 
 mask = color > threshold
 #mask2 = np.logical_and(st_adata.obs["_indices"].isin(np.where(st_adata.obsm["proportions"][ct].values > 0.02)[0]),color < threshold,).values
@@ -451,27 +451,27 @@ destvi_utils.plot_de_genes(
 )
 
 
-# In[ ]:
+# In[38]:
 
 
 #Locate the indices of the spots of interest
 
 
-# In[27]:
+# In[39]:
 
 
 # Find the indices where the values are larger than 0.3
-indices = np.where(color > 0.3)[0] #Modify the criteria to highlight spots of interest
+indices = np.where(color > 0.2)[0] #Modify the criteria to highlight spots of interest
 indices
 
 
-# In[ ]:
+# In[40]:
 
 
 #Subset the cell type proportion for spots of interest
 
 
-# In[28]:
+# In[41]:
 
 
 indices_list = []
@@ -484,19 +484,19 @@ spots_of_interest["ct_sum"] = spots_of_interest.sum(axis=1)
 spots_of_interest["others"] = 1-spots_of_interest["ct_sum"]
 
 
-# In[29]:
+# In[42]:
 
 
 spots_of_interest
 
 
-# In[ ]:
+# In[43]:
 
 
 #Create data frame for gene of interest
 
 
-# In[55]:
+# In[44]:
 
 
 gene_of_interest = "CD19" #One gene supported at the moment
@@ -510,13 +510,13 @@ globals()[gene_of_interest]["expression_sum"] = globals()[gene_of_interest].sum(
 globals()[gene_of_interest]["others"] = 0
 
 
-# In[ ]:
+# In[45]:
 
 
 #Plotting
 
 
-# In[57]:
+# In[46]:
 
 
 # Define colors and cell types
